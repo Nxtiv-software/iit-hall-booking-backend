@@ -2,16 +2,16 @@ GET http://localhost:8800
 
 ### Get users (admin)
 GET http://localhost:8800/admin/users
-Authorization: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzYyOTczMDgxLCJleHAiOjE3NjMwNTk0ODF9.D4h-a8QQW-ehqjngmJ2in3N7tAhvhGFotWEt-b7UkWo"
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzYzMTEwODM3LCJleHAiOjE3NjMxOTcyMzd9.ZVqoitDkrDa6dmukY3YMF2jaKCGOC6m0I3hjutA7EZM
 
 ### Create a user
 POST http://localhost:8800/auth/register 
 Content-Type: application/json
 
 {
-  "username": "vihan",
-  "password": "vihan",
-  "role": "admin"
+  "username": "bojitha",
+  "password": "bojitha",
+  "role": ""
 }
 
 ### Login a user

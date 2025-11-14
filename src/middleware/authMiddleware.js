@@ -2,26 +2,35 @@ import jwt from "jsonwebtoken";
 import prisma from "../prismaClient.js";
 
 const authMiddleware = async (req, res, next) => {
-  const token = req.headers["authorization"];
+  const authHeader = req.headers["authorization"];
 
-  if (!token) {
+  if (!authHeader) {
     return res.status(401).json({ message: "No token provided" });
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  // Extract token from "Bearer <token>" format or just "<token>"
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.substring(7)
+    : authHeader;
 
-  //Fetch user with role
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.id },
-    select: { id: true, username: true, role: true },
-  });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  if (!user) {
-    return res.status(401).json({ message: "Invalid token" });
+    //Fetch user with role
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, username: true, role: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid token", error: error.message });
   }
-
-  req.user = user;
-  next();
   // jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
   //   if (err) {
   //     return res.status(401).json({ message: "Invalid token" });
