@@ -15,10 +15,38 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
+  id        Int        @id @default(autoincrement())
+  username  String     @unique
   password  String
-  role      String   @default("student")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      String     @default("student") // "student", "admin1", "admin2", "super_admin"
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  bookings  Booking[]  @relation("BookingCreator")
+  approvals Approval[] // Approvals given by this user
+}
+
+model Booking {
+  id          Int        @id @default(autoincrement())
+  title       String   
+  description String
+  status      String     @default("pending") // "pending", "admin1_approved", "admin2_approved", "approved", "rejected"
+  userId      Int
+  user        User       @relation("BookingCreator", fields: [userId], references: [id], onDelete: Cascade)
+  approvals   Approval[] // History of approvals
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Approval {
+  id         Int      @id @default(autoincrement())
+  bookingId  Int
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  approverId Int
+  approver   User     @relation(fields: [approverId], references: [id])
+  action     String   // "approved" or "rejected"
+  comment    String?  // Optional comment from admin
+  level      String   // "admin1", "admin2"
+  createdAt  DateTime @default(now())
+  
+  @@unique([bookingId, level]) // Each booking can only have one approval per level
 }

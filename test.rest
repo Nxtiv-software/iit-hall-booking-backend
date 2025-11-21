@@ -2,16 +2,16 @@ GET http://localhost:8800
 
 ### Get users (admin)
 GET http://localhost:8800/admin/users
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzYzMTEwODM3LCJleHAiOjE3NjMxOTcyMzd9.ZVqoitDkrDa6dmukY3YMF2jaKCGOC6m0I3hjutA7EZM
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzYyOTczMTk4LCJleHAiOjE3NjMwNTk1OTh9.ZY4TNQlVLEJoYkyuvNgHzKGsT07ZH4xNP4qWyeo3TLY
 
 ### Create a user
 POST http://localhost:8800/auth/register 
 Content-Type: application/json
 
 {
-  "username": "bojitha",
-  "password": "bojitha",
-  "role": ""
+  "username": "vihan",
+  "password": "vihan",
+  "role": "admin"
 }
 
 ### Login a user
@@ -23,3 +23,36 @@ Content-Type: application/json
   "password": "vihan"
 }
 
+### Create a booking
+POST http://localhost:8800/bookings 
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IiIsImlhdCI6MTc2MzQxMTc4NiwiZXhwIjoxNzYzNDk4MTg2fQ.MatmIgWDq1CGJ7c4xHpdUeUnC6g-vxL1n4txSaNfo5M
+
+{
+  "title": "Hall L5",
+  "description": "Hall L5"
+}
+
+### Admin1: Get Pending Bookings
+GET http://localhost:8800/approvals/admin1/pending
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
+
+### Admin1: Approve Booking
+POST http://localhost:8800/approvals/1/admin1-review
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
+
+{
+  "action": "approved",
+  "comment": "Hall is available for the requested date"
+}
+
+### Admin2: Final Approval
+POST http://localhost:8800/approvals/1/admin2-review
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
+
+{
+  "action": "approved",
+  "comment": "Final approval granted. Booking confirmed."
+}
