@@ -42,7 +42,7 @@ app.use("/students", authMiddleware, studentRoutes);
 app.use("/admins", authMiddleware, adminMiddleware, adminRoutes);
 app.use("/comments", authMiddleware, commentRoutes);
 app.use("/bookings", authMiddleware, bookingRoutes);
-app.use("/requests", requestRoutes);
+app.use("/requests", authMiddleware, requestRoutes);
 
 //Seeding data before starting the roles
 async function startServer() {
