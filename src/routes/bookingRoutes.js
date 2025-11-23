@@ -13,7 +13,17 @@ router.get("/", async (req, res) => {
             user: true
           }
         },
-        request: true
+        request: {
+          include: {
+            student: {
+              include: {
+                user: true,
+              }
+            },
+            venue: true,
+            status: true,
+          }
+        },
       }
     });
 
