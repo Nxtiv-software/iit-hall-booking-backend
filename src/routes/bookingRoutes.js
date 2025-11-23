@@ -10,21 +10,21 @@ router.get("/", async (req, res) => {
       include: {
         admin: {
           include: {
-            user: true
-          }
+            user: true,
+          },
         },
         request: {
           include: {
             student: {
               include: {
                 user: true,
-              }
+              },
             },
             venue: true,
             status: true,
-          }
+          },
         },
-      }
+      },
     });
 
     res.json(bookings);
