@@ -211,6 +211,49 @@ router.post("/requests", async (req, res) => {
   }
 });
 
+//Get all requests by student id
+router.get("/:studentId/requests", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const requests = await prisma.request.findMany({
+      where: { studentId },
+      include: {
+        student: {
+          include: { user: true },
+        },
+        venue: true,
+        status: true,
+        attachments: true,
+        comments: {
+          include: {
+            admin: {
+              include: { user: true }
+            }
+          }
+        },
+        requestSlots: {
+          include: {
+            timeSlot: true,
+          }
+        },
+        bookings: {
+          include: {
+            admin: {
+              include: { user: true }
+            }
+          }
+        }
+      }
+    });
+
+    res.json(requests);
+  } catch (error) {
+    console.log(error.message);
+    res.sendStatus(500).json({ message: error.message });
+  }
+});
+
 //Get all bookings by student id
 router.get("/:studentId/bookings", async (req, res) => {
   try {

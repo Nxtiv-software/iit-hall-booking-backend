@@ -60,6 +60,13 @@ model Admin {
   user      User     @relation(fields: [userId], references: [id])
 
   adminLevel String
+
+  buildingId      String?
+  building        Building?      @relation(fields: [buildingId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -95,6 +102,37 @@ model Status {
   updatedAt DateTime @updatedAt
 
   requests  Request[]
+}
+
+/* ============================
+   DEPARTMENT
+============================ */
+model Department {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  resources Resource[]
+  admins Admin[]
+}
+
+/* ============================
+   BUILDING
+============================ */
+model Building {
+  id          String   @id @default(uuid())
+  name        String   @unique      
+  address     String?
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venues      Venue[]      
+  admins      Admin[]       
 }
 
 /* ============================
@@ -216,7 +254,9 @@ model Resource {
 
   name       String
   isAvailable Boolean? @default(true)
-  department String?
+  
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -236,8 +276,9 @@ model Venue {
   isAvailable   Boolean? @default(true)
   capacity      Int?
   floorNumber   String?
-  buildingTag   String?
-  buildingAddress String?
+
+  buildingId   String?
+  building     Building? @relation(fields: [buildingId], references: [id])
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

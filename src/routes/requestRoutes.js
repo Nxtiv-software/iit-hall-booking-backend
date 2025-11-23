@@ -5,6 +5,18 @@ import fs from "fs";
 
 const router = express.Router();
 
+//Get all requests
+router.get("/", async (req, res) => {
+  try {
+    const requests = await prisma.request.findMany();
+
+    res.json(requests);
+  } catch (error) {
+    console.log(error.message);
+    res.sendStatus(500).json({ message: error.message });
+  }
+});
+
 //Get all attachments by request id
 router.get("/:requestId/attachments", async (req, res) => {
   try {

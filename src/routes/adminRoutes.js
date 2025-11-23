@@ -33,6 +33,8 @@ router.post("/me", async (req, res) => {
       avatarUrl,
       phoneNum,
       uniEmail,
+      buildingId,
+      departmentId,
     } = req.body;
 
     const adminExist = await prisma.admin.findUnique({
@@ -58,6 +60,8 @@ router.post("/me", async (req, res) => {
     const admin = await prisma.admin.create({
       data: {
         adminLevel,
+        buildingId,
+        departmentId,
         user: {
           connect: { id: req.user.id },
         },
@@ -85,6 +89,8 @@ router.put("/me", async (req, res) => {
       avatarUrl,
       phoneNum,
       uniEmail,
+      buildingId,
+      departmentId,
      } = req.body;
 
     const adminExist = await prisma.admin.findUnique({
@@ -111,8 +117,11 @@ router.put("/me", async (req, res) => {
         where: { userId: req.user.id },
         data: {
             adminLevel,
+            buildingId,
+            departmentId,
         },
     });
+
 
     res.json({
       message: "Admin profile updated successfully",
