@@ -9,10 +9,12 @@ import userRoutes from "./routes/userRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js"
+import requestRoutes from "./routes/requestRoutes.js";
 
 //Middleware imports
 import authMiddleware from "./middleware/authMiddleware.js";
 import adminMiddleware from "./middleware/adminMiddleware.js";
+import uploadMiddleware from "./middleware/uploadMiddleware.js";
 
 import { seedDatabase } from "./seed.js";
 
@@ -38,8 +40,9 @@ app.use("/auth", authRoutes);
 app.use("/users", authMiddleware, userRoutes);
 app.use("/students", authMiddleware, studentRoutes);
 app.use("/admins", authMiddleware, adminMiddleware, adminRoutes);
-app.user("/comments", authMiddleware, commentRoutes);
-app.user("/bookings", authMiddleware, bookingRoutes);
+app.use("/comments", authMiddleware, commentRoutes);
+app.use("/bookings", authMiddleware, bookingRoutes);
+app.use("/requests", requestRoutes);
 
 //Seeding data before starting the roles
 async function startServer() {
