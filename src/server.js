@@ -2,10 +2,13 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 
+//API route imports
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import studentRoutes from "./routes/studentRoutes.js"
+import studentRoutes from "./routes/studentRoutes.js";
+
+//Middleware imports
 import authMiddleware from "./middleware/authMiddleware.js";
 import adminMiddleware from "./middleware/adminMiddleware.js";
 
