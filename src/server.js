@@ -14,7 +14,6 @@ import requestRoutes from "./routes/requestRoutes.js";
 //Middleware imports
 import authMiddleware from "./middleware/authMiddleware.js";
 import adminMiddleware from "./middleware/adminMiddleware.js";
-import uploadMiddleware from "./middleware/uploadMiddleware.js";
 
 import { seedDatabase } from "./seed.js";
 
