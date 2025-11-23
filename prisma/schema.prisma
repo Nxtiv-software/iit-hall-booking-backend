@@ -35,9 +35,10 @@ model User {
   role      Role       @relation(fields: [roleId], references: [id])
 
   username  String     @unique
-  firstName String
-  lastName  String
-  uniEmail  String     @unique
+  password  String
+  firstName String?
+  lastName  String?
+  uniEmail  String?     @unique
   gender    String?
   avatarUrl String?
   phoneNum  String?
@@ -117,7 +118,7 @@ model TimeSlot {
 model Attachment {
   id        String      @id @default(uuid())
   requestId String
-  filePath  String
+  filePath  String?
 
   request   Request  @relation(fields: [requestId], references: [id])
 
@@ -138,8 +139,8 @@ model Request {
   venue        Venue       @relation(fields: [venueId], references: [id])
   status       Status      @relation(fields: [statusId], references: [id])
 
-  title        String
-  description  String
+  title        String?
+  description  String?
   attendance   Int?
   requiredDate DateTime
 
@@ -177,7 +178,7 @@ model Log {
   id         String      @id @default(uuid())
   bookingId  String?
   requestId  String?
-  description String
+  description String?
 
   booking    Booking? @relation(fields: [bookingId], references: [id])
   request    Request? @relation(fields: [requestId], references: [id])
@@ -197,7 +198,7 @@ model Comment {
   admin      Admin     @relation(fields: [adminId], references: [id])
   request    Request  @relation(fields: [requestId], references: [id])
 
-  commentText String
+  commentText String?
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

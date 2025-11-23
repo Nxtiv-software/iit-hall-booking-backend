@@ -3,44 +3,46 @@ import prisma from "../prismaClient.js";
 
 const router = express.Router();
 
-//Get admin profile
+//Get student profile
 router.get("/me", async (req, res) => {
   try {
-    const admin = await prisma.admin.findUnique({
+    const student = await prisma.student.findUnique({
       where: { userId: req.user.id },
       include: { user: true },
     });
 
-    if (!admin) {
-      return res.status(404).json({ message: "Admin profile not found" });
+    if (!student) {
+      return res.status(404).json({ message: "Student profile not found" });
     }
 
-    res.json({ admin });
+    res.json({ student });
   } catch (error) {
     console.log(error.message);
     res.sendStatus(503);
   }
 });
 
-//Create admin profile
+//Create student profile
 router.post("/me", async (req, res) => {
   try {
     const { 
-      adminLevel,
-      firstName,
-      lastName,
-      gender,
-      avatarUrl,
-      phoneNum,
-      uniEmail,
+        iitIdNumber, 
+        societyName, 
+        societyPosition,
+        firstName,
+        lastName,
+        gender,
+        avatarUrl,
+        phoneNum,
+        uniEmail 
     } = req.body;
 
-    const adminExist = await prisma.admin.findUnique({
+    const studentExist = await prisma.student.findUnique({
       where: { userId: req.user.id },
     });
 
-    if (adminExist) {
-      return res.status(400).json({ message: "Admin profile already exists" });
+    if (studentExist) {
+      return res.status(400).json({ message: "Student profile already exists" });
     }
 
     await prisma.user.update({
@@ -55,9 +57,11 @@ router.post("/me", async (req, res) => {
       },
     });
 
-    const admin = await prisma.admin.create({
+    const student = await prisma.student.create({
       data: {
-        adminLevel,
+        iitIdNumber,
+        societyName,
+        societyPosition,
         user: {
           connect: { id: req.user.id },
         },
@@ -65,8 +69,8 @@ router.post("/me", async (req, res) => {
     });
 
     res.status(201).json({
-      message: "Admin profile created successfully",
-      admin,
+      message: "Student profile created successfully",
+      student,
     });
   } catch (error) {
     console.log(error.message);
@@ -74,25 +78,27 @@ router.post("/me", async (req, res) => {
   }
 });
 
-//Update admin profile
+//Update student profile
 router.put("/me", async (req, res) => {
   try {
     const { 
-      adminLevel,
-      firstName,
-      lastName,
-      gender,
-      avatarUrl,
-      phoneNum,
-      uniEmail,
-     } = req.body;
+        iitIdNumber, 
+        societyName, 
+        societyPosition,
+        firstName,
+        lastName,
+        gender,
+        avatarUrl,
+        phoneNum,
+        uniEmail 
+    } = req.body;
 
-    const adminExist = await prisma.admin.findUnique({
+    const studentExist = await prisma.student.findUnique({
       where: { userId: req.user.id },
     });
 
-    if (!adminExist) {
-      return res.status(400).json({ message: "Admin profile not found" });
+    if (!studentExist) {
+      return res.status(400).json({ message: "Student profile not found" });
     }
 
     await prisma.user.update({
@@ -107,16 +113,18 @@ router.put("/me", async (req, res) => {
         },
     });
 
-    const admin = await prisma.admin.update({
+    const student = await prisma.student.update({
         where: { userId: req.user.id },
         data: {
-            adminLevel,
+            iitIdNumber,
+            societyName,
+            societyPosition,
         },
     });
 
     res.json({
-      message: "Admin profile updated successfully",
-      admin,
+      message: "Student profile updated successfully",
+      student,
     });
   } catch (error) {
     console.log(error.message);
@@ -124,11 +132,11 @@ router.put("/me", async (req, res) => {
   }
 });
 
-//Delete admin profile
+//Delete student profile
 router.delete("/me", async (req, res) => {
   try {
 
-    await prisma.admin.delete({
+    await prisma.student.delete({
       where: { userId: req.user.id },
     });
 
@@ -137,12 +145,13 @@ router.delete("/me", async (req, res) => {
     });
 
     res.json({
-      message: "Admin profile and user account deleted successfully",
+      message: "Student profile and user account deleted successfully",
     });
   } catch (error) {
     console.log(error.message);
     res.sendStatus(503);
   }
 });
+
 
 export default router;
