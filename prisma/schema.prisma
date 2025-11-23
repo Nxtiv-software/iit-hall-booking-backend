@@ -211,7 +211,7 @@ model Comment {
 /* ============================
    RESOURCES
 ============================ */
-model Resources {
+model Resource {
   id         String    @id @default(uuid())
 
   name       String
@@ -221,7 +221,7 @@ model Resources {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  venueResources VenueResources[]
+  venueResources VenueResource[]
 }
 
 /* ============================
@@ -243,19 +243,19 @@ model Venue {
   updatedAt     DateTime @updatedAt
 
   requests      Request[]
-  venueResources VenueResources[]
+  venueResources VenueResource[]
 }
 
 /* ============================
    VENUE_RESOURCES (Join Table)
 ============================ */
-model VenueResources {
+model VenueResource {
   id        String      @id @default(uuid())
   venueId   String
   resourceId String
 
   venue     Venue      @relation(fields: [venueId], references: [id])
-  resource  Resources  @relation(fields: [resourceId], references: [id])
+  resource  Resource  @relation(fields: [resourceId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

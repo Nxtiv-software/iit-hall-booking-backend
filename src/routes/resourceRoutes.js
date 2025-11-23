@@ -3,10 +3,10 @@ import prisma from "../prismaClient.js";
 
 const router = express.Router();
 
-//Get all statuses
+//Get all resources
 router.get("/", async (req, res) => {
   try {
-    const statuses = await prisma.status.findMany();
+    const resources = await prisma.resources.findMany();
 
     res.json(statuses);
   } catch (error) {
