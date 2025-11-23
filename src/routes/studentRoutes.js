@@ -153,5 +153,65 @@ router.delete("/me", async (req, res) => {
   }
 });
 
+//Creating a request by a student
+router.post("/requests", async (req, res) => {
+  try {
+    const student = await prisma.student.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student profile not found" });
+    }
+
+    const { venueId, title, description, attendance, requiredDate, timeSlotIds } = req.body;
+
+    if (!venueId || !requiredDate) {
+      return res.status(400).json({ message: "venueId and requiredDate are required." });
+    }
+
+    const status = await prisma.status.findUnique({
+      where: { name: "PENDING" },
+    });
+
+    if (!status) {
+      return res.status(500).json({ message: "Default status not found" });
+    }
+
+    const newRequest = await prisma.request.create({
+      data: {
+        studentId: student.id,
+        venueId,
+        statusId: status.id,
+        title,
+        description,
+        attendance,
+        requiredDate: new Date(requiredDate),
+        requestSlots: timeSlotIds?.length
+          ? {
+              create: timeSlotIds.map(id => ({ timeSlotId: id })),
+            }
+          : undefined,
+      },
+      include: {
+        student: true,
+        venue: true,
+        status: true,
+        requestSlots: { include: { timeSlot: true } },
+      },
+    });
+
+    res.status(201).json({
+      message: "Request created successfully",
+      request: newRequest,
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.sendStatus(503);
+  }
+});
+
+
+
 
 export default router;
