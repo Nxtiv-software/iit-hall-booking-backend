@@ -211,6 +211,43 @@ router.post("/requests", async (req, res) => {
   }
 });
 
+//Get all bookings by student id
+router.get("/:studentId/bookings", async (req, res) => {
+  try {
+const { studentId } = req.params;
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        request: {
+          studentId: studentId 
+        }
+      },
+      include: {
+        admin: {
+          include: {
+            user: true
+          }
+        },
+        request: {
+          include: {
+            student: {
+              include: {
+                user: true,
+              }
+            },
+            venue: true,
+            status: true,
+          }
+        },
+      }
+    });
+
+    res.json(bookings);
+  } catch (error) {
+    console.log(error.message);
+    res.sendStatus(500).json({ message: error.message });
+  }
+});
 
 
 

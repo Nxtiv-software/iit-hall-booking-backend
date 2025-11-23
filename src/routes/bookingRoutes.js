@@ -27,7 +27,7 @@ router.get("/", async (req, res) => {
       }
     });
 
-    res.json(bookings)
+    res.json(bookings);
   } catch (error) {
     console.log(error.message);
     res.sendStatus(500).json({ message: error.message });
