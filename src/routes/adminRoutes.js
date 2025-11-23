@@ -145,4 +145,154 @@ router.delete("/me", async (req, res) => {
   }
 });
 
+//Get all comments for request
+router.get("/requests/:requestId/comments", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const comments = await prisma.comment.findMany({
+      where: { requestId },
+      include: {
+        admin: { 
+          include: { user: true } 
+        }
+      },
+      orderBy: { createdAt: "asc" }
+    });
+
+    return res.json(comments);
+
+  } catch (error) {
+    console.log(error.message);
+    res.sendStatus(503); 
+  }
+});
+
+//Create comment for request by a admin
+router.post("/requests/:requestId/comments", async (req, res) => {
+  try {
+    const admin = await prisma.admin.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin profile not found" });
+    }
+    
+    const { requestId } = req.params;
+    const { commentText } = req.body;
+
+    if (!requestId) {
+      return res.status(400).json({ message: "requestId is required." });
+    }
+
+    const newComment = await prisma.comment.create({
+      data: {
+        adminId: admin.id,
+        requestId,
+        commentText,
+      }
+    })
+    return res.status(201).json(newComment);
+  } catch (error) {
+    console.log(error.message);
+    res.sendStatus(503); 
+  }
+});
+
+// Update a comment for request by a admin
+router.put("/requests/:requestId/comments/:commentId", async (req, res) => {
+  try {
+    const { requestId, commentId } = req.params;
+    const { commentText } = req.body;
+
+    if (!commentText || !commentText.trim()) {
+      return res.status(400).json({ message: "commentText is required." });
+    }
+
+    const admin = await prisma.admin.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!admin) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const existing = await prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (existing.requestId !== requestId) {
+      return res.status(400).json({ 
+        message: "This comment does not belong to the given requestId." 
+      });
+    }
+
+    if (existing.adminId !== admin.id) {
+      return res.status(403).json({ message: "You cannot edit another admin's comment" });
+    }
+
+    const updated = await prisma.comment.update({
+      where: { id: commentId },
+      data: { commentText: commentText.trim() },
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.log(error.message);
+    return res.sendStatus(503);
+  }
+});
+
+// Delete a comment for request by a admin
+router.delete("/requests/:requestId/comments/:commentId", async (req, res) => {
+  try {
+    const { requestId, commentId } = req.params;
+
+    const admin = await prisma.admin.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!admin) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const existing = await prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (existing.requestId !== requestId) {
+      return res.status(400).json({
+        message: "This comment does not belong to the given requestId.",
+      });
+    }
+
+    if (existing.adminId !== admin.id) {
+      return res.status(403).json({
+        message: "You cannot delete another admin's comment",
+      });
+    }
+
+    await prisma.comment.delete({
+      where: { id: commentId },
+    });
+
+    return res.json({ message: "Comment deleted successfully" });
+
+  } catch (error) {
+    console.log(error.message);
+    return res.sendStatus(503);
+  }
+});
+
+
+
 export default router;
