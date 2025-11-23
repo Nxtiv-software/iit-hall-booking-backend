@@ -5,6 +5,20 @@ import prisma from "../prismaClient.js";
 
 const router = express.Router();
 
+//Get current user profile
+router.get("/me", async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+    });
+
+    res.json({ user });
+  } catch (error) {
+    console.log(error.message);
+    res.sendStatus(503);
+  }
+});
+
 // Register a new user
 router.post("/register", async (req, res) => {
   const { username, password, role } = req.body;
