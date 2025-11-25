@@ -154,154 +154,6 @@ router.delete("/me", async (req, res) => {
   }
 });
 
-//Get all comments for request
-router.get("/requests/:requestId/comments", async (req, res) => {
-  try {
-    const { requestId } = req.params;
-
-    const comments = await prisma.comment.findMany({
-      where: { requestId },
-      include: {
-        admin: { 
-          include: { user: true } 
-        }
-      },
-      orderBy: { createdAt: "asc" }
-    });
-
-    return res.json(comments);
-
-  } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503); 
-  }
-});
-
-//Create comment for request by a admin
-router.post("/requests/:requestId/comments", async (req, res) => {
-  try {
-    const admin = await prisma.admin.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!admin) {
-      return res.status(404).json({ message: "Admin profile not found" });
-    }
-    
-    const { requestId } = req.params;
-    const { commentText } = req.body;
-
-    if (!requestId) {
-      return res.status(400).json({ message: "requestId is required." });
-    }
-
-    const newComment = await prisma.comment.create({
-      data: {
-        adminId: admin.id,
-        requestId,
-        commentText,
-      }
-    })
-    return res.status(201).json(newComment);
-  } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503); 
-  }
-});
-
-// Update a comment for request by a admin
-router.put("/requests/:requestId/comments/:commentId", async (req, res) => {
-  try {
-    const { requestId, commentId } = req.params;
-    const { commentText } = req.body;
-
-    if (!commentText || !commentText.trim()) {
-      return res.status(400).json({ message: "commentText is required." });
-    }
-
-    const admin = await prisma.admin.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!admin) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    const existing = await prisma.comment.findUnique({
-      where: { id: commentId },
-    });
-
-    if (!existing) {
-      return res.status(404).json({ message: "Comment not found" });
-    }
-
-    if (existing.requestId !== requestId) {
-      return res.status(400).json({ 
-        message: "This comment does not belong to the given requestId." 
-      });
-    }
-
-    if (existing.adminId !== admin.id) {
-      return res.status(403).json({ message: "You cannot edit another admin's comment" });
-    }
-
-    const updated = await prisma.comment.update({
-      where: { id: commentId },
-      data: { commentText: commentText.trim() },
-    });
-
-    return res.json(updated);
-  } catch (error) {
-    console.log(error.message);
-    return res.sendStatus(503);
-  }
-});
-
-// Delete a comment for request by a admin
-router.delete("/requests/:requestId/comments/:commentId", async (req, res) => {
-  try {
-    const { requestId, commentId } = req.params;
-
-    const admin = await prisma.admin.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!admin) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    const existing = await prisma.comment.findUnique({
-      where: { id: commentId },
-    });
-
-    if (!existing) {
-      return res.status(404).json({ message: "Comment not found" });
-    }
-
-    if (existing.requestId !== requestId) {
-      return res.status(400).json({
-        message: "This comment does not belong to the given requestId.",
-      });
-    }
-
-    if (existing.adminId !== admin.id) {
-      return res.status(403).json({
-        message: "You cannot delete another admin's comment",
-      });
-    }
-
-    await prisma.comment.delete({
-      where: { id: commentId },
-    });
-
-    return res.json({ message: "Comment deleted successfully" });
-
-  } catch (error) {
-    console.log(error.message);
-    return res.sendStatus(503);
-  }
-});
-
 //Get all bookings by admin id
 router.get("/:adminId/bookings", async (req, res) => {
   try {
@@ -335,6 +187,290 @@ const { adminId } = req.params;
   } catch (error) {
     console.log(error.message);
     res.sendStatus(500).json({ message: error.message });
+  }
+});
+
+//Get pending requests by admin level, building and department
+router.get("/:adminId/pending-requests", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const level = admin.adminLevel;
+
+    let filter = {};
+
+    if (level === 3) {
+      filter = {
+        venue: { buildingId: admin.buildingId }
+      };
+    }
+
+    if (level === 4) {
+      filter = {
+        departmentId: admin.departmentId
+      };
+    }
+
+    const status = await prisma.status.findUnique({
+      where: { name: "PENDING" }
+    });
+
+    if (!status) 
+      return res.status(500).json({ message: "Pending status not found" });
+
+    let approvalFilter = {};
+
+    if (level === 1) {
+      // Level 1 sees all pending requests
+      approvalFilter = {};
+    } else {
+      // Level 2, 3, 4: must have approvals from all previous levels
+      const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1); // e.g., level 3 → [1,2]
+      approvalFilter = {
+        every: {
+          OR: requiredLevels.map(l => ({ adminLevel: l }))
+        }
+      };
+    }
+
+    const requests = await prisma.request.findMany({
+      where: {
+        statusId: status.id,
+        approvals: {
+          none: { adminLevel: level }, 
+          ...approvalFilter
+        },
+        ...filter
+      },
+      include: {
+        student: { include: { user: true } },
+        venue: true,
+        status: true,
+      }
+    });
+
+    res.json(requests);
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+// Get rejected requests for admin
+router.get("/:adminId/rejected-requests", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const level = admin.adminLevel;
+
+    let filter = {};
+
+    if (level === 3) {
+      filter = {
+        venue: { buildingId: admin.buildingId }
+      };
+    }
+
+    if (level === 4) {
+      filter = {
+        departmentId: admin.departmentId
+      };
+    }
+
+    const status = await prisma.status.findUnique({
+      where: { name: "REJECTED" }
+    });
+
+    if (!status) 
+      return res.status(500).json({ message: "Rejected status not found" });
+
+    // Hierarchical approval filter
+    let approvalFilter = {};
+
+    if (level === 1) {
+      // Level 1 sees all rejected requests
+      approvalFilter = {};
+    } else {
+      // Levels 2-4: must have approvals from all previous levels
+      const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1); 
+      approvalFilter = {
+        every: {
+          OR: requiredLevels.map(l => ({ adminLevel: l }))
+        }
+      };
+    }
+
+    const requests = await prisma.request.findMany({
+      where: {
+        statusId: status.id, 
+        approvals: approvalFilter,
+        ...filter
+      },
+      include: {
+        student: { include: { user: true } },
+        venue: true,
+        status: true,
+      }
+    });
+
+    res.json(requests);
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+
+//Approve a request
+router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
+  try {
+    const { adminId, requestId } = req.params;
+    const { comment } = req.body;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const status = await prisma.status.findUnique({
+      where: { name: "APPROVED" }
+    });
+
+    if (!status) return res.status(500).json({ message: "Status not found" });
+
+    // Create approval
+    const approval = await prisma.approval.create({
+      data: {
+        requestId,
+        adminId: admin.id,
+        adminLevel: admin.adminLevel,
+        statusId: status.id,
+        comment,
+      }
+    });
+
+    // Check how many approvals exist
+    const approvals = await prisma.approval.findMany({
+      where: { requestId },
+      orderBy: { adminLevel: "asc" }
+    });
+
+    const approvedLevels = approvals.map(a => a.adminLevel);
+
+    const requiredLevels = [1, 2, 3, 4];
+
+    const isComplete = requiredLevels.every(l => approvedLevels.includes(l));
+
+    if (isComplete) {
+      // Mark request as fully approved
+      await prisma.request.update({
+        where: { id: requestId },
+        data: { statusId: status.id },
+      });
+
+      // Create booking entry
+      await prisma.booking.create({
+        data: {
+          requestId,
+          adminId: admin.id
+        }
+      });
+    }
+
+    res.json({ message: "Approved", approval });
+
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+//Reject a request
+router.post("/:adminId/requests/:requestId/reject", async (req, res) => {
+  try {
+    const { adminId, requestId } = req.params;
+    const { comment } = req.body;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const status = await prisma.status.findUnique({
+      where: { name: "REJECTED" }
+    });
+
+    if (!status) return res.status(500).json({ message: "Status not found" });
+
+    await prisma.approval.create({
+      data: {
+        requestId,
+        adminId: admin.id,
+        adminLevel: admin.adminLevel,
+        statusId: status.id,
+        comment
+      }
+    });
+
+    // Update request status
+    await prisma.request.update({
+      where: { id: requestId },
+      data: { statusId: status.id }
+    });
+
+    res.json({ message: "Request rejected" });
+
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+// Update approval comment
+router.put("/:adminId/requests/:requestId/approval", async (req, res) => {
+  try {
+    const { adminId, requestId } = req.params;
+    const { adminLevel, comment } = req.body; 
+
+    const approval = await prisma.approval.findFirst({
+      where: {
+        adminId: adminId,
+        requestId: requestId,
+        adminLevel: adminLevel,
+      },
+    });
+
+    if (!approval) {
+      return res.status(404).json({ message: "Approval not found" });
+    }
+
+    const updatedApproval = await prisma.approval.update({
+      where: { id: approval.id },
+      data: { comment },
+    });
+
+    res.json({ message: "Comment updated successfully", approval: updatedApproval });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
   }
 });
 

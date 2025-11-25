@@ -181,4 +181,25 @@ router.delete("/:requestId/attachments/:attachmentId", async (req, res) => {
   }
 });
 
+// Get full approval history
+router.get("/:requestId/approvals", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const approvals = await prisma.approval.findMany({
+      where: { requestId },
+      include: {
+        admin: { include: { user: true } }
+      }
+    });
+
+    res.json(approvals);
+  } catch (err) {
+    console.log(err);
+    res.sendStatus(500);
+  }
+});
+
+
+
 export default router;
