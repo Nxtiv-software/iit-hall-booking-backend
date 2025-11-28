@@ -47,13 +47,13 @@ app.use("/students", authMiddleware, studentRoutes);
 app.use("/admins", authMiddleware, adminMiddleware, adminRoutes);
 app.use("/bookings", authMiddleware, bookingRoutes);
 app.use("/requests", authMiddleware, requestRoutes);
-app.use("/roles", roleRoutes);
-app.use("/statuses", statusRoutes);
-app.use("/time-slots", timeSlotRoutes);
-app.use("/logs", logRoutes);
-app.use("/resources", resourceRoutes);
-app.use("/venues", venueRoutes);
-app.user("/departments", departmentRoutes)
+app.use("/roles", authMiddleware, roleRoutes);
+app.use("/statuses", authMiddleware, statusRoutes);
+app.use("/time-slots", authMiddleware, timeSlotRoutes);
+app.use("/logs", authMiddleware, logRoutes);
+app.use("/resources", authMiddleware, resourceRoutes);
+app.use("/venues", authMiddleware, venueRoutes);
+app.user("/departments", authMiddleware, departmentRoutes)
 
 //Seeding data before starting the roles
 async function startServer() {
