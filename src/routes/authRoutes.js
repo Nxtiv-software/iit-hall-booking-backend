@@ -12,10 +12,9 @@ router.get("/me", async (req, res) => {
         where: { id: req.user.id },
     });
 
-    res.json({ user });
+    return res.json({ user });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -45,7 +44,7 @@ router.post("/register", async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       token,
       message: "User registered successfully",
       user: {
@@ -55,8 +54,7 @@ router.post("/register", async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -90,7 +88,7 @@ router.post("/login", async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       token,
       message: "User login successfully",
       user: {
@@ -100,8 +98,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 

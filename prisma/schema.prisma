@@ -175,7 +175,6 @@ model TimeSlot {
 model Attachment {
   id        String  @id @default(uuid())
   requestId String
-  filePath  String?
   fileName  String?
   realName  String?
   fileSize  String?

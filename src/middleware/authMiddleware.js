@@ -31,15 +31,6 @@ const authMiddleware = async (req, res, next) => {
   } catch (error) {
     return res.status(401).json({ message: "Invalid token", error: error.message });
   }
-  // jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-  //   if (err) {
-  //     return res.status(401).json({ message: "Invalid token" });
-  //   }
-
-  //   // is the token is correct then we modified the incoming req and set the userId and pass the req to the next endpoint
-  //   req.userId = decoded.id;
-  //   next();
-  // });
 };
 
 export default authMiddleware;

@@ -12,10 +12,9 @@ router.get("/users", async (req, res) => {
         return res.status(404).json({message: "Users not found"});
     }
 
-    res.json({ users });
+    return res.json({ users });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -31,10 +30,9 @@ router.get("/users/:id", async (req, res) => {
     if(!user){
         return res.status(404).json({message: "User not found"});
     }
-    res.json({ user });
+    return res.json({ user });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 

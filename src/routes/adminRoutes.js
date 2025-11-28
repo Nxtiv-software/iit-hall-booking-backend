@@ -15,10 +15,9 @@ router.get("/me", async (req, res) => {
       return res.status(404).json({ message: "Admin profile not found" });
     }
 
-    res.json({ admin });
+    return res.json({ admin });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -68,13 +67,12 @@ router.post("/me", async (req, res) => {
       },
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Admin profile created successfully",
       admin,
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -123,13 +121,12 @@ router.put("/me", async (req, res) => {
     });
 
 
-    res.json({
+    return res.json({
       message: "Admin profile updated successfully",
       admin,
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -145,12 +142,11 @@ router.delete("/me", async (req, res) => {
       where: { id: req.user.id },
     });
 
-    res.json({
+    return res.json({
       message: "Admin profile and user account deleted successfully",
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -183,10 +179,9 @@ const { adminId } = req.params;
       }
     });
 
-    res.json(bookings);
+    return res.json(bookings);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -256,10 +251,9 @@ router.get("/:adminId/pending-requests", async (req, res) => {
       }
     });
 
-    res.json(requests);
+    return res.json(requests);
   } catch (error) {
-    console.log(error);
-    res.sendStatus(500);
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -327,10 +321,9 @@ router.get("/:adminId/rejected-requests", async (req, res) => {
       }
     });
 
-    res.json(requests);
+    return res.json(requests);
   } catch (error) {
-    console.log(error);
-    res.sendStatus(500);
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -393,11 +386,10 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
       });
     }
 
-    res.json({ message: "Approved", approval });
+    return res.json({ message: "Approved", approval });
 
   } catch (error) {
-    console.log(error);
-    res.sendStatus(500);
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -436,11 +428,10 @@ router.post("/:adminId/requests/:requestId/reject", async (req, res) => {
       data: { statusId: status.id }
     });
 
-    res.json({ message: "Request rejected" });
+    return res.json({ message: "Request rejected" });
 
   } catch (error) {
-    console.log(error);
-    res.sendStatus(500);
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -467,10 +458,9 @@ router.put("/:adminId/requests/:requestId/approval", async (req, res) => {
       data: { comment },
     });
 
-    res.json({ message: "Comment updated successfully", approval: updatedApproval });
+    return res.json({ message: "Comment updated successfully", approval: updatedApproval });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
