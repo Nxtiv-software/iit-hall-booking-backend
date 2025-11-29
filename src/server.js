@@ -53,7 +53,7 @@ app.use("/time-slots", authMiddleware, timeSlotRoutes);
 app.use("/logs", authMiddleware, logRoutes);
 app.use("/resources", authMiddleware, resourceRoutes);
 app.use("/venues", authMiddleware, venueRoutes);
-app.user("/departments", authMiddleware, departmentRoutes)
+app.use("/departments", authMiddleware, departmentRoutes)
 
 //Seeding data before starting the roles
 async function startServer() {
