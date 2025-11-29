@@ -285,6 +285,110 @@ const { studentId } = req.params;
   }
 });
 
+// Get the upcoming bookings for the following week
+router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
+  try {
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+
+    const upcoming = await prisma.booking.findMany({
+      where: {
+        request: {
+          requiredDate: {
+            gte: today,
+            lte: nextWeek,
+          },
+        },
+      },
+      include: {
+        admin: {
+          include: {
+            user: true,
+          },
+        },
+        request: {
+          include: {
+            student: {
+              include: { user: true },
+            },
+            venue: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        request: {
+          requiredDate: "asc",
+        },
+      },
+    });
+
+    res.json(upcoming);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+//Get total count of requests by student id
+router.get("/:studentId/requests/count", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const count = await prisma.request.count({
+      where: { studentId: studentId },
+    });
+
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+//Get total count of bookings by student id
+router.get("/:studentId/bookings/count", async (req, res) => {
+  try {
+const { studentId } = req.params;
+
+    const count = await prisma.booking.count({
+      where: {
+        request: {
+          studentId: studentId 
+        }
+      },
+    });
+
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+//Get total count of pending requests by student id
+router.get("/:studentId/requests/pending/count", async (req, res) => {
+  try {
+    const pendingStatus = await prisma.status.findUnique({
+      where: { name: "Pending" },
+      select: { id: true },
+    });
+
+    if (!pendingStatus) {
+      return res.status(404).json({ message: "Pending status not found" });
+    }
+
+    const count = await prisma.request.count({
+      where: { statusId: pendingStatus.id },
+    });
+
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+
 
 
 export default router;
