@@ -5,23 +5,9 @@ import prisma from "../prismaClient.js";
 
 const router = express.Router();
 
-//Get current user profile
-router.get("/me", async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-    });
-
-    res.json({ user });
-  } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
-  }
-});
-
 // Register a new user
 router.post("/register", async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password, roleId } = req.body;
 
   // encrypt the password
   const hashedPassword = bcrypt.hashSync(password, 8);
@@ -32,13 +18,13 @@ router.post("/register", async (req, res) => {
       data: {
         username,
         password: hashedPassword,
-        role: role, // Default to student if not provided
+        roleId: roleId, // Default to student if not provided
       },
     });
 
     // create a token
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, roleId: user.roleId },
       process.env.JWT_SECRET,
       {
         expiresIn: "24h",
@@ -51,7 +37,7 @@ router.post("/register", async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        role: user.role,
+        roleId: user.roleId,
       },
     });
   } catch (error) {
@@ -68,7 +54,7 @@ router.post("/login", async (req, res) => {
       where: {
         username: username,
       },
-      select: { id: true, role: true, password: true, username: true },
+      select: { id: true, roleId: true, password: true, username: true },
     });
 
     if (!user) {
@@ -83,7 +69,7 @@ router.post("/login", async (req, res) => {
 
     // then we have a successful login
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, roleId: user.roleId },
       process.env.JWT_SECRET,
       {
         expiresIn: "24h",
@@ -96,7 +82,7 @@ router.post("/login", async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        role: user.role,
+        roleId: user.roleId,
       },
     });
   } catch (error) {
