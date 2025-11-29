@@ -1,19 +1,30 @@
 import express from "express";
 import prisma from "../prismaClient.js";
-import upload from "../middleware/uploadMiddleware.js";
-import fs from "fs";
+import { upload, uploadToS3, s3 } from "../middleware/uploadMiddleware.js";
+import { GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
 
 const router = express.Router();
+
+//Helper function to get the url of the document
+async function getSignedUrlV3(key) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: key,
+  });
+  return await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 min
+}
+
 
 //Get all requests
 router.get("/", async (req, res) => {
   try {
     const requests = await prisma.request.findMany();
 
-    res.json(requests);
+    return res.json(requests);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -37,22 +48,21 @@ router.get("/:requestId/attachments", async (req, res) => {
         }
     });
 
-    // Add preview URL
-    const host = req.protocol + "://" + req.get("host"); // e.g., http://localhost:8800
-    const attachmentsWithPreview = attachments.map(att => ({
-      ...att,
-      previewUrl: host + "/" + att.filePath.replace(/\\/g, "/"),
-    }));
+    const attachmentsWithPreview = await Promise.all(
+      attachments.map(async (att) => ({
+        ...att,
+        previewUrl: await getSignedUrlV3(att.fileName),
+      }))
+    );
 
-    res.json(attachmentsWithPreview);
+    return res.json(attachmentsWithPreview);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
 //Post an attachment by request id
-router.get("/:requestId/attachments", upload.single("file"), async (req, res) => {
+router.post("/:requestId/attachments", upload.single("file"), async (req, res) => {
   try {
     const { requestId } = req.params;
     const file = req.file;
@@ -61,24 +71,23 @@ router.get("/:requestId/attachments", upload.single("file"), async (req, res) =>
       return res.status(400).json({ message: "File is required" });
     }
 
+    const key = await uploadToS3(file);
+
     const attachment = await prisma.attachment.create({
       data: {
-        requestId,
-        filePath: file.path,           // local server path
-        fileName: file.filename,       // unique filename on server
-        realName: file.originalname,   // original uploaded filename
-        fileSize: file.size.toString(),// file size in bytes
-        mimeType: file.mimetype,       // mime type (e.g., image/png)
+        requestId,         
+        fileName: key,      
+        realName: file.originalname,   
+        fileSize: file.size.toString(),
+        mimeType: file.mimetype,       
       },
     });
 
-    res.json({
-      message: "File uploaded and saved in database successfully",
-      attachment,
-    });
+    attachment.previewUrl = await getSignedUrlV3(attachment.fileName);
+
+    return res.status(201).json({ message: "File uploaded successfully", attachment });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -109,44 +118,13 @@ router.get("/:requestId/attachments/:attachmentId", async (req, res) => {
       return res.status(404).json({ message: "Attachment not found" });
     }
 
-    const host = req.protocol + "://" + req.get("host");
-    attachment.previewUrl = host + "/" + attachment.filePath.replace(/\\/g, "/");
+    attachment.previewUrl = await getSignedUrlV3(attachment.fileName);
 
-    res.json(attachment);
+    return res.json(attachment);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
-
-// //Update an attachment
-// router.put("/:requestId/attachments/:attachmentId", async (req, res) => {
-//   try {
-//     const { requestId, attachmentId } = req.params;
-//     const { url } = req.body;
-
-//     const exists = await prisma.attachment.findFirst({
-//         where: { 
-//             id: attachmentId, 
-//             requestId: requestId 
-//         },
-//     });
-
-//     if (!exists) {
-//       return res.status(404).json({ message: "Attachment not found" });
-//     }
-
-//     const updated = await prisma.attachment.update({
-//       where: { id: attachmentId },
-//       data: { url },
-//     });
-
-//     res.json(updated);
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ message: error.message });
-//   }
-// });
 
 //Delete an attachment
 router.delete("/:requestId/attachments/:attachmentId", async (req, res) => {
@@ -164,20 +142,20 @@ router.delete("/:requestId/attachments/:attachmentId", async (req, res) => {
       return res.status(404).json({ message: "Attachment not found" });
     }
 
-    if (exists.filePath) {
-      fs.unlink(exists.filePath, err => {
-        if (err) console.error("Failed to delete file:", err);
-      });
-    }
+    // Delete from s3
+    await s3.send(new DeleteObjectCommand({ 
+      Bucket: process.env.AWS_BUCKET_NAME, 
+      Key: exists.fileName 
+    }));
 
-    await prisma.attachment.delete({
-      where: { id: attachmentId },
+    // Delete from db
+    await prisma.attachment.delete({ 
+      where: { id: attachmentId } 
     });
 
-    res.json({ message: "Attachment deleted successfully" });
+    return res.json({ message: "Attachment deleted successfully" });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -193,10 +171,9 @@ router.get("/:requestId/approvals", async (req, res) => {
       }
     });
 
-    res.json(approvals);
-  } catch (err) {
-    console.log(err);
-    res.sendStatus(500);
+    return res.json(approvals);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 });
 

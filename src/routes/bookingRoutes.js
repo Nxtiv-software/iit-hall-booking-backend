@@ -27,10 +27,9 @@ router.get("/", async (req, res) => {
       },
     });
 
-    res.json(bookings);
+    return res.json(bookings);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 

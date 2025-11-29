@@ -8,10 +8,9 @@ router.get("/", async (req, res) => {
   try {
     const resources = await prisma.resource.findMany();
 
-    res.json(resources);
+    return res.json(resources);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 

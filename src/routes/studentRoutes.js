@@ -15,10 +15,9 @@ router.get("/me", async (req, res) => {
       return res.status(404).json({ message: "Student profile not found" });
     }
 
-    res.json({ student });
+    return res.json({ student });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -68,13 +67,12 @@ router.post("/me", async (req, res) => {
       },
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Student profile created successfully",
       student,
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -122,13 +120,12 @@ router.put("/me", async (req, res) => {
         },
     });
 
-    res.json({
+    return res.json({
       message: "Student profile updated successfully",
       student,
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -144,12 +141,11 @@ router.delete("/me", async (req, res) => {
       where: { id: req.user.id },
     });
 
-    res.json({
+    return res.json({
       message: "Student profile and user account deleted successfully",
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -201,13 +197,12 @@ router.post("/requests", async (req, res) => {
       },
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Request created successfully",
       request: newRequest,
     });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
   }
 });
 
@@ -247,10 +242,9 @@ router.get("/:studentId/requests", async (req, res) => {
       }
     });
 
-    res.json(requests);
+    return res.json(requests);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -285,10 +279,9 @@ const { studentId } = req.params;
       }
     });
 
-    res.json(bookings);
+    return res.json(bookings);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
