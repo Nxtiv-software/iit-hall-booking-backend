@@ -3,8 +3,22 @@ import prisma from "../prismaClient.js";
 
 const router = express.Router();
 
+//Get current user profile
+router.get("/me", async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+    });
+
+    res.json({ user });
+  } catch (error) {
+    console.log(error.message);
+    res.sendStatus(503);
+  }
+});
+
 //Get all the users
-router.get("/users", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const users = await prisma.user.findMany();
 
@@ -19,12 +33,12 @@ router.get("/users", async (req, res) => {
 });
 
 //Get user by Id
-router.get("/users/:id", async (req, res) => {
+router.get("/:userId", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { userId } = req.params;
 
     const user = await prisma.user.findUnique({
-        where: { id },
+        where: { id: userId },
     });
 
     if(!user){
