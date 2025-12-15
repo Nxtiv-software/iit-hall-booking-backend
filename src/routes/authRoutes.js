@@ -14,11 +14,21 @@ router.post("/register", async (req, res) => {
 
   //save the new user and hashed password to the db
   try {
+    const studentRole = await prisma.role.findUnique({
+      where: { name: "STUDENT" },
+    });
+
+    if (!studentRole) {
+      return res.status(500).json({ message: "Student role not found" });
+    }
+
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
-        roleId: roleId, // Default to student if not provided
+        role: {
+          connect: { id: studentRole.id },
+        },
       },
     });
 
