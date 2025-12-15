@@ -9,17 +9,29 @@ const router = express.Router();
 router.post("/register", async (req, res) => {
   const { username, password, roleId } = req.body;
 
+  if (!roleId) {
+    return res.status(400).json({ message: "roleId is required" });
+  }
+
   // encrypt the password
   const hashedPassword = bcrypt.hashSync(password, 8);
 
   //save the new user and hashed password to the db
   try {
-    const studentRole = await prisma.role.findUnique({
-      where: { name: "STUDENT" },
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
     });
 
-    if (!studentRole) {
-      return res.status(500).json({ message: "Student role not found" });
+    if (existingUser) {
+      return res.status(409).json({ message: "Username already exists" });
+    }
+    
+    const role = await prisma.role.findUnique({
+      where: { id: roleId },
+    });
+
+    if (!role) {
+      return res.status(400).json({ message: "Invalid roleId" });
     }
 
     const user = await prisma.user.create({
@@ -27,7 +39,7 @@ router.post("/register", async (req, res) => {
         username,
         password: hashedPassword,
         role: {
-          connect: { id: studentRole.id },
+          connect: { id: role.id },
         },
       },
     });
