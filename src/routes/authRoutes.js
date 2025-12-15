@@ -25,7 +25,7 @@ router.post("/register", async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ message: "Username already exists" });
     }
-    
+
     const role = await prisma.role.findUnique({
       where: { id: roleId },
     });
@@ -75,7 +75,18 @@ router.post("/login", async (req, res) => {
       where: {
         username: username,
       },
-      select: { id: true, roleId: true, password: true, username: true },
+      select: { 
+        id: true, 
+        roleId: true, 
+        password: true, 
+        username: true,
+        role: {  // include role name
+          select: { 
+            id: true, 
+            name: true 
+          }
+        }
+      },
     });
 
     if (!user) {
@@ -104,6 +115,7 @@ router.post("/login", async (req, res) => {
         id: user.id,
         username: user.username,
         roleId: user.roleId,
+        role: user.role,
       },
     });
   } catch (error) {
