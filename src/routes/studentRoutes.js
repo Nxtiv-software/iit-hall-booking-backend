@@ -388,7 +388,16 @@ router.get("/:studentId/requests/pending/count", async (req, res) => {
 });
 
 
+// Get total student count 
+router.get("/count", async (req, res) => {
+  try {
+    const totalStudents = await prisma.student.count();
 
+    return res.json({ totalStudents });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
 
 
 export default router;

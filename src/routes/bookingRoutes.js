@@ -33,4 +33,16 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Get total booking count 
+router.get("/count", async (req, res) => {
+  try {
+    const totalBookings = await prisma.booking.count();
+
+    return res.json({ totalBookings });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
 export default router;
