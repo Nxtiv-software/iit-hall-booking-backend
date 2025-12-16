@@ -464,4 +464,64 @@ router.put("/:adminId/requests/:requestId/approval", async (req, res) => {
   }
 });
 
+// Get count of pending requests for a specific admin
+router.get("/:adminId/pending-count", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    // Fetch admin info
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) {
+      return res.status(403).json({ message: "Admin not found" });
+    }
+
+    const level = admin.adminLevel;
+
+    // Determine scope filter
+    let filter = {};
+    if (level === 3) filter = { venue: { buildingId: admin.buildingId } };
+    if (level === 4) filter = { departmentId: admin.departmentId };
+
+    // Get PENDING status
+    const status = await prisma.status.findUnique({
+      where: { name: "PENDING" },
+    });
+
+    if (!status) {
+      return res.status(500).json({ message: "Pending status not found" });
+    }
+
+    // Hierarchical approval filter
+    let approvalFilter = {};
+    if (level > 1) {
+      const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1);
+      approvalFilter = {
+        every: {
+          OR: requiredLevels.map((l) => ({ adminLevel: l })),
+        },
+      };
+    }
+
+    // Count pending requests
+    const pendingCount = await prisma.request.count({
+      where: {
+        statusId: status.id,
+        approvals: {
+          none: { adminLevel: level }, // not yet approved by this admin
+          ...approvalFilter,
+        },
+        ...filter,
+      },
+    });
+
+    return res.json({ totalPending: pendingCount });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
 export default router;

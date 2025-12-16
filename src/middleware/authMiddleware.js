@@ -19,14 +19,18 @@ const authMiddleware = async (req, res, next) => {
     //Fetch user with role
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: { id: true, username: true, roleId: true },
+      select: { id: true, username: true, role: { select: { name: true } } },
     });
 
     if (!user) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    req.user = user;
+    req.user = {
+      id: user.id,
+      username: user.username,
+      role: user.role.name, 
+    };
     next();
   } catch (error) {
     return res.status(401).json({ message: "Invalid token", error: error.message });
