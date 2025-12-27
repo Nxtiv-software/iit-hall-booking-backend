@@ -8,7 +8,11 @@ router.get("/me", async (req, res) => {
   try {
     const admin = await prisma.admin.findUnique({
       where: { userId: req.user.id },
-      include: { user: true },
+      include: { 
+        user: true,
+        building: true,
+        department: true,
+      },
     });
 
     if (!admin) {
