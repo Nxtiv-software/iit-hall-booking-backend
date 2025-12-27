@@ -523,5 +523,4 @@ router.get("/:adminId/pending-count", async (req, res) => {
   }
 });
 
-
 export default router;

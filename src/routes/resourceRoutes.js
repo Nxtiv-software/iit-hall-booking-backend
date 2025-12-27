@@ -6,7 +6,11 @@ const router = express.Router();
 //Get all resources
 router.get("/", async (req, res) => {
   try {
-    const resources = await prisma.resource.findMany();
+    const resources = await prisma.resource.findMany({
+      include: {
+        department: true,
+      }
+    });
 
     return res.json(resources);
   } catch (error) {
