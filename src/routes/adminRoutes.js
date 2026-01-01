@@ -527,4 +527,42 @@ router.get("/:adminId/pending-count", async (req, res) => {
   }
 });
 
+//Add a resource
+router.post("/:adminId/departments/:departmentId/resources", async (req, res) => {
+  try {
+    const { adminId, departmentId } = req.params;
+    const { name, isAvailable } = req.body;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const department = await prisma.department.findUnique({
+      where: { id: departmentId },
+    })
+
+    if (!department)
+      return res.status(404).json({ message: "Department not found" });
+
+    await prisma.resource.create({
+      data: {
+        name,
+        isAvailable,
+        departmentId,
+      }
+    });
+
+    return res.json({ 
+      message: "Resource Added!", 
+      resource 
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
