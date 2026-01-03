@@ -74,6 +74,23 @@ export async function seedDatabase() {
   // ----------------------------------------------------------
   // SEED DEPARTMENTS
   // ----------------------------------------------------------
+  const existingDepartments = await prisma.department.findFirst();
+
+  if (!existingDepartments) {
+    console.log("Seeding departments...");
+
+    await prisma.department.createMany({
+      data: [
+        { name: "IT" },
+        { name: "HR" },
+        { name: "OTHER" },
+      ],
+    });
+
+    console.log("Department seeded.");
+  } else {
+    console.log("Department already exist. Skipping department seeding.");
+  }
 
   console.log("All seeding complete!");
 }

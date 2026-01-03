@@ -547,7 +547,7 @@ router.post("/:adminId/departments/:departmentId/resources", async (req, res) =>
     if (!department)
       return res.status(404).json({ message: "Department not found" });
 
-    await prisma.resource.create({
+    const resource = await prisma.resource.create({
       data: {
         name,
         isAvailable,
