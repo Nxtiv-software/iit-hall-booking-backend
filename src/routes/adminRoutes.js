@@ -565,4 +565,87 @@ router.post("/:adminId/departments/:departmentId/resources", async (req, res) =>
   }
 });
 
+//Update a resource
+router.put("/:adminId/departments/:departmentId/resources/:resourceId", async (req, res) => {
+  try {
+    const { adminId, departmentId, resourceId } = req.params;
+    const { name, isAvailable } = req.body;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const department = await prisma.department.findUnique({
+      where: { id: departmentId },
+    })
+
+    if (!department)
+      return res.status(404).json({ message: "Department not found" });
+
+    const resource = await prisma.resource.findFirst({
+        where: {
+          id: resourceId,
+          departmentId,
+        },
+      })
+
+      if (!resource)
+        return res.status(404).json({ message: "Resource not found in this department" })
+
+    const updatedResource = await prisma.resource.update({
+      where: { id: resourceId },
+        data: {
+          name,
+          isAvailable,
+        },
+    });
+
+    return res.json({ 
+      message: "Resource Updated!", 
+      updatedResource 
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+//Delete a resource
+router.delete("/:adminId/departments/:departmentId/resources/:resourceId", async (req, res) => {
+  try {
+    const { adminId, departmentId, resourceId } = req.params;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const resource = await prisma.resource.findFirst({
+        where: {
+          id: resourceId,
+          departmentId,
+        },
+      })
+
+      if (!resource)
+        return res.status(404).json({ message: "Resource not found in this department" })
+
+    await prisma.resource.delete({
+        where: { id: resourceId },
+      })
+
+    return res.json({ 
+      message: "Resource Deleted!" 
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
