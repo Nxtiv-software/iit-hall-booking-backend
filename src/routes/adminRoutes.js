@@ -648,4 +648,147 @@ router.delete("/:adminId/departments/:departmentId/resources/:resourceId", async
   }
 });
 
+//Add a venue
+router.post("/:adminId/buildings/:buildingId/venues", async (req, res) => {
+  try {
+    const { adminId, buildingId } = req.params;
+    const { 
+      name,
+      description,
+      type,
+      capacity,
+      floorNumber,
+      isAvailable,
+    } = req.body;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const building = await prisma.building.findUnique({
+      where: { id: buildingId },
+    })
+
+    if (!building)
+      return res.status(404).json({ message: "Building not found" });
+
+    const venue = await prisma.venue.create({
+      data: {
+        name,
+        description,
+        type,
+        capacity,
+        floorNumber,
+        isAvailable,
+        buildingId,
+      }
+    });
+
+    return res.json({ 
+      message: "Venue Added!", 
+      venue 
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+//Update a venue
+router.put("/:adminId/buildings/:buildingId/venues/:venueId", async (req, res) => {
+  try {
+    const { adminId, buildingId, venueId } = req.params;
+    const { 
+      name,
+      description,
+      type,
+      capacity,
+      floorNumber,
+      isAvailable,
+    } = req.body;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const building = await prisma.building.findUnique({
+      where: { id: buildingId },
+    })
+
+    if (!building)
+      return res.status(404).json({ message: "Building not found" });
+
+    const venue = await prisma.venue.findFirst({
+        where: {
+          id: venueId,
+          buildingId,
+        },
+      })
+
+      if (!venue)
+        return res.status(404).json({ message: "Venue not found in this building" })
+
+    const updatedVenue = await prisma.venue.update({
+      where: { id: venueId },
+        data: {
+          name,
+          description,
+          type,
+          capacity,
+          floorNumber,
+          isAvailable,
+        },
+    });
+
+    return res.json({ 
+      message: "Venue Updated!", 
+      updatedVenue
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+//Delete a venue
+router.delete("/:adminId/buildings/:buildingId/venues/:venueId", async (req, res) => {
+  try {
+    const { adminId, buildingId, venueId } = req.params;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) 
+      return res.status(403).json({ message: "Not admin" });
+
+    const venue = await prisma.venue.findFirst({
+        where: {
+          id: venueId,
+          buildingId,
+        },
+      })
+
+      if (!venue)
+        return res.status(404).json({ message: "Venue not found in this building" })
+
+    await prisma.venue.delete({
+        where: { id: venueId },
+      })
+
+    return res.json({ 
+      message: "Venue Deleted!" 
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
