@@ -270,7 +270,7 @@ model Resource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  venueResources VenueResource[]
+  // venueResources VenueResource[]
 }
 
 /**
@@ -295,7 +295,7 @@ model Venue {
   updatedAt DateTime @updatedAt
 
   requests       Request[]
-  venueResources VenueResource[]
+  // venueResources VenueResource[]
 }
 
 /**
@@ -329,19 +329,19 @@ model Approval {
  * VENUE_RESOURCES (Join Table)
  * ============================
  */
-model VenueResource {
-  id         String @id @default(uuid())
-  venueId    String
-  resourceId String
+// model VenueResource {
+//   id         String @id @default(uuid())
+//   venueId    String
+//   resourceId String
 
-  venue    Venue    @relation(fields: [venueId], references: [id])
-  resource Resource @relation(fields: [resourceId], references: [id])
+//   venue    Venue    @relation(fields: [venueId], references: [id])
+//   resource Resource @relation(fields: [resourceId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  @@unique([venueId, resourceId])
-}
+//   @@unique([venueId, resourceId])
+// }
 
 /**
  * ============================
