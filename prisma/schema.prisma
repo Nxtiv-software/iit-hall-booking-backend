@@ -285,7 +285,7 @@ model Venue {
   description String?
   type        String?
   isAvailable Boolean? @default(true)
-  capacity    Int?
+  capacity    String?
   floorNumber String?
 
   buildingId String?
