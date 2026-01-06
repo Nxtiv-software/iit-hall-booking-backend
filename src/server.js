@@ -16,6 +16,7 @@ import logRoutes from "./routes/logRoutes.js";
 import resourceRoutes from "./routes/resourceRoutes.js";
 import venueRoutes from "./routes/venueRoutes.js";
 import departmentRoutes from "./routes/departmentRoutes.js";
+import buildingRoutes from "./routes/buildingRoutes.js";
 
 //Middleware imports
 import authMiddleware from "./middleware/authMiddleware.js";
@@ -54,6 +55,7 @@ app.use("/logs", authMiddleware, logRoutes);
 app.use("/resources", authMiddleware, resourceRoutes);
 app.use("/venues", authMiddleware, venueRoutes);
 app.use("/departments", authMiddleware, departmentRoutes)
+app.use("/buildings", authMiddleware, buildingRoutes)
 
 //Seeding data before starting the roles
 async function startServer() {
