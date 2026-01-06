@@ -6,7 +6,9 @@ const router = express.Router();
 //Get all venues
 router.get("/", async (req, res) => {
   try {
-    const venues = await prisma.venue.findMany();
+    const venues = await prisma.venue.findMany({
+      include: { building: true },
+  });
 
     return res.json(venues);
   } catch (error) {
