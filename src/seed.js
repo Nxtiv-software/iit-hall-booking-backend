@@ -64,8 +64,25 @@ export async function seedDatabase() {
   }
 
   // ----------------------------------------------------------
-  // SEED VENUE
+  // SEED BUILDINGS
   // ----------------------------------------------------------
+  const existingBuildings = await prisma.building.findFirst();
+
+  if (!existingBuildings) {
+    console.log("Seeding buildings...");
+
+    await prisma.building.createMany({
+      data: [
+        { name: "GP" },
+        { name: "SP" },
+        { name: "JAVA" },
+      ],
+    });
+
+    console.log("Buildings seeded.");
+  } else {
+    console.log("Building already exist. Skipping building seeding.");
+  }
 
   // ----------------------------------------------------------
   // SEED RESOURCES
