@@ -43,12 +43,12 @@ app.get("/", (req, res) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/roles", roleRoutes);
 app.use("/users", authMiddleware, userRoutes);
 app.use("/students", authMiddleware, studentRoutes);
 app.use("/admins", authMiddleware, adminMiddleware, adminRoutes);
 app.use("/bookings", authMiddleware, bookingRoutes);
 app.use("/requests", authMiddleware, requestRoutes);
-app.use("/roles", authMiddleware, roleRoutes);
 app.use("/statuses", authMiddleware, statusRoutes);
 app.use("/time-slots", authMiddleware, timeSlotRoutes);
 app.use("/logs", authMiddleware, logRoutes);
