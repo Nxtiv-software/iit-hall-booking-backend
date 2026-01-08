@@ -588,7 +588,6 @@ router.put("/:adminId/departments/:departmentId/resources/:resourceId", async (r
     const resource = await prisma.resource.findFirst({
         where: {
           id: resourceId,
-          departmentId,
         },
       })
 
@@ -598,6 +597,7 @@ router.put("/:adminId/departments/:departmentId/resources/:resourceId", async (r
     const updatedResource = await prisma.resource.update({
       where: { id: resourceId },
         data: {
+          departmentId,
           name,
           isAvailable,
         },
@@ -730,7 +730,6 @@ router.put("/:adminId/buildings/:buildingId/venues/:venueId", async (req, res) =
     const venue = await prisma.venue.findFirst({
         where: {
           id: venueId,
-          buildingId,
         },
       })
 
@@ -740,6 +739,7 @@ router.put("/:adminId/buildings/:buildingId/venues/:venueId", async (req, res) =
     const updatedVenue = await prisma.venue.update({
       where: { id: venueId },
         data: {
+          buildingId,
           name,
           description,
           type,

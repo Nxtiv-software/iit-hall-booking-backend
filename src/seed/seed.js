@@ -1,4 +1,9 @@
-import prisma from "./prismaClient.js";
+import prisma from "../prismaClient.js";
+import { rolesSeed } from "./roles_seed.js";
+import { buildingSeed } from "./buildings_seed.js";
+import { statusSeed } from "./status_seed.js";
+import { departmentSeed } from "./departments_seed.js";
+import { venueSeed } from "./venue_seed.js";
 
 export async function seedDatabase() {
   console.log("Checking for initial roles...");
@@ -12,10 +17,8 @@ export async function seedDatabase() {
     console.log("Seeding roles...");
 
     await prisma.role.createMany({
-      data: [
-        { name: "ADMIN" },
-        { name: "STUDENT" },
-      ],
+      data:
+        rolesSeed
     });
 
     console.log("Roles seeded.");
@@ -32,12 +35,8 @@ export async function seedDatabase() {
     console.log("Seeding status...");
 
     await prisma.status.createMany({
-      data: [
-        { name: "PENDING" },
-        { name: "APPROVED" },
-        { name: "REJECTED" },
-        { name: "CANCELLED" },
-      ],
+      data:
+        statusSeed
     });
 
     console.log("Status seeded.");
@@ -72,11 +71,8 @@ export async function seedDatabase() {
     console.log("Seeding buildings...");
 
     await prisma.building.createMany({
-      data: [
-        { name: "GP" },
-        { name: "SP" },
-        { name: "JAVA" },
-      ],
+      data:
+        buildingSeed
     });
 
     console.log("Buildings seeded.");
@@ -85,8 +81,50 @@ export async function seedDatabase() {
   }
 
   // ----------------------------------------------------------
-  // SEED RESOURCES
+  // SEED VENUES
   // ----------------------------------------------------------
+  const existingVenues = await prisma.venue.findFirst();
+
+  if (!existingVenues) {
+    console.log("Seeding venues...");
+
+    const buildings = await prisma.building.findMany();
+
+    const buildingMap = {};
+      buildings.forEach((b) => {
+        buildingMap[b.name] = b.id;
+      });
+
+    const venuesData = venueSeed.map((venue) => {
+      const buildingId = buildingMap[venue.buildingName];
+
+      if (!buildingId) {
+        throw new Error(
+          `Building "${venue.buildingName}" not found for venue "${venue.name}"`
+        );
+      }
+
+      return {
+        name: venue.name,
+        description: venue.description ?? null,
+        isAvailable: venue.isAvailable ?? true,
+        capacityAcademic: venue.capacityAcademic,
+        capacityExamination: venue.capacityExamination,
+        floorNumber: venue.floorNumber,
+        buildingId, 
+      };
+    });
+
+    await prisma.venue.createMany({
+      data: 
+        venuesData,
+    });
+
+    console.log("Venue seeded.");
+  } else {
+    console.log("Venue already exist. Skipping venue seeding.");
+  }
+  
 
   // ----------------------------------------------------------
   // SEED DEPARTMENTS
@@ -97,11 +135,8 @@ export async function seedDatabase() {
     console.log("Seeding departments...");
 
     await prisma.department.createMany({
-      data: [
-        { name: "IT" },
-        { name: "HR" },
-        { name: "OTHER" },
-      ],
+      data: 
+        departmentSeed
     });
 
     console.log("Department seeded.");

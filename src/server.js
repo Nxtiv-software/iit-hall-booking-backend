@@ -22,7 +22,7 @@ import buildingRoutes from "./routes/buildingRoutes.js";
 import authMiddleware from "./middleware/authMiddleware.js";
 import adminMiddleware from "./middleware/adminMiddleware.js";
 
-import { seedDatabase } from "./seed.js";
+import { seedDatabase } from "./seed/seed.js";
 
 const app = express();
 const PORT = process.env.PORT || 8800;
