@@ -24,16 +24,16 @@ router.get("/me", async (req, res) => {
 //Create student profile
 router.post("/me", async (req, res) => {
   try {
-    const { 
-        iitIdNumber, 
-        societyName, 
-        societyPosition,
-        firstName,
-        lastName,
-        gender,
-        avatarUrl,
-        phoneNum,
-        uniEmail 
+    const {
+      iitIdNumber,
+      societyName,
+      societyPosition,
+      firstName,
+      lastName,
+      gender,
+      avatarUrl,
+      phoneNum,
+      uniEmail,
     } = req.body;
 
     const studentExist = await prisma.student.findUnique({
@@ -41,7 +41,9 @@ router.post("/me", async (req, res) => {
     });
 
     if (studentExist) {
-      return res.status(400).json({ message: "Student profile already exists" });
+      return res
+        .status(400)
+        .json({ message: "Student profile already exists" });
     }
 
     await prisma.user.update({
@@ -79,16 +81,16 @@ router.post("/me", async (req, res) => {
 //Update student profile
 router.put("/me", async (req, res) => {
   try {
-    const { 
-        iitIdNumber, 
-        societyName, 
-        societyPosition,
-        firstName,
-        lastName,
-        gender,
-        avatarUrl,
-        phoneNum,
-        uniEmail 
+    const {
+      iitIdNumber,
+      societyName,
+      societyPosition,
+      firstName,
+      lastName,
+      gender,
+      avatarUrl,
+      phoneNum,
+      uniEmail,
     } = req.body;
 
     const studentExist = await prisma.student.findUnique({
@@ -100,24 +102,24 @@ router.put("/me", async (req, res) => {
     }
 
     await prisma.user.update({
-        where: { id: req.user.id },
-        data: {
-            firstName,
-            lastName,
-            gender,
-            avatarUrl,
-            phoneNum,
-            uniEmail,
-        },
+      where: { id: req.user.id },
+      data: {
+        firstName,
+        lastName,
+        gender,
+        avatarUrl,
+        phoneNum,
+        uniEmail,
+      },
     });
 
     const student = await prisma.student.update({
-        where: { userId: req.user.id },
-        data: {
-            iitIdNumber,
-            societyName,
-            societyPosition,
-        },
+      where: { userId: req.user.id },
+      data: {
+        iitIdNumber,
+        societyName,
+        societyPosition,
+      },
     });
 
     return res.json({
@@ -132,7 +134,6 @@ router.put("/me", async (req, res) => {
 //Delete student profile
 router.delete("/me", async (req, res) => {
   try {
-
     await prisma.student.delete({
       where: { userId: req.user.id },
     });
@@ -157,14 +158,43 @@ router.post("/requests", async (req, res) => {
     });
 
     if (!student) {
-      return res.status(404).json({ message: "Student profile not found" });
+      return res.status(404).json({ message: "Student not found" });
     }
 
-    const { venueId, title, description, attendance, requiredDate, timeSlotIds } = req.body;
+    const {
+      form1Data,
+      form2Data,
+      form3Data,
+      form4Data,
+      form5Data,
+      venueId,
+      requiredDate,
+    } = req.body;
 
-    if (!venueId || !requiredDate) {
-      return res.status(400).json({ message: "venueId and requiredDate are required." });
+    // Validate required fields
+    if (!venueId) {
+      return res.status(400).json({ message: "venueId is required" });
     }
+
+    if (!requiredDate) {
+      return res.status(400).json({ message: "requiredDate is required" });
+    }
+
+    // Combine all form data
+    const formData = {
+      form1: form1Data || {},
+      form2: form2Data || {},
+      form3: form3Data || {},
+      form4: form4Data || {},
+      form5: form5Data || {},
+    };
+
+    // Extract common fields from form1Data for easy access
+    const title = form1Data?.eventtitle || "";
+    const description = form1Data?.description || "";
+    const attendance = form1Data?.participants
+      ? parseInt(form1Data.participants)
+      : null;
 
     const status = await prisma.status.findUnique({
       where: { name: "PENDING" },
@@ -182,18 +212,15 @@ router.post("/requests", async (req, res) => {
         title,
         description,
         attendance,
+        formData: formData,
         requiredDate: new Date(requiredDate),
-        requestSlots: timeSlotIds?.length
-          ? {
-              create: timeSlotIds.map(id => ({ timeSlotId: id })),
-            }
-          : undefined,
       },
       include: {
-        student: true,
+        student: {
+          include: { user: true },
+        },
         venue: true,
         status: true,
-        requestSlots: { include: { timeSlot: true } },
       },
     });
 
@@ -202,7 +229,8 @@ router.post("/requests", async (req, res) => {
       request: newRequest,
     });
   } catch (error) {
-    return res.status(503).json({ message: error.message });
+    console.error("Error creating request:", error);
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -223,23 +251,23 @@ router.get("/:studentId/requests", async (req, res) => {
         comments: {
           include: {
             admin: {
-              include: { user: true }
-            }
-          }
+              include: { user: true },
+            },
+          },
         },
         requestSlots: {
           include: {
             timeSlot: true,
-          }
+          },
         },
         bookings: {
           include: {
             admin: {
-              include: { user: true }
-            }
-          }
-        }
-      }
+              include: { user: true },
+            },
+          },
+        },
+      },
     });
 
     return res.json(requests);
@@ -251,32 +279,32 @@ router.get("/:studentId/requests", async (req, res) => {
 //Get all bookings by student id
 router.get("/:studentId/bookings", async (req, res) => {
   try {
-const { studentId } = req.params;
+    const { studentId } = req.params;
 
     const bookings = await prisma.booking.findMany({
       where: {
         request: {
-          studentId: studentId 
-        }
+          studentId: studentId,
+        },
       },
       include: {
         admin: {
           include: {
-            user: true
-          }
+            user: true,
+          },
         },
         request: {
           include: {
             student: {
               include: {
                 user: true,
-              }
+              },
             },
             venue: true,
             status: true,
-          }
+          },
         },
-      }
+      },
     });
 
     return res.json(bookings);
@@ -330,7 +358,6 @@ router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
   }
 });
 
-
 //Get total count of requests by student id
 router.get("/:studentId/requests/count", async (req, res) => {
   try {
@@ -349,13 +376,13 @@ router.get("/:studentId/requests/count", async (req, res) => {
 //Get total count of bookings by student id
 router.get("/:studentId/bookings/count", async (req, res) => {
   try {
-const { studentId } = req.params;
+    const { studentId } = req.params;
 
     const count = await prisma.booking.count({
       where: {
         request: {
-          studentId: studentId 
-        }
+          studentId: studentId,
+        },
       },
     });
 
@@ -387,8 +414,7 @@ router.get("/:studentId/requests/pending/count", async (req, res) => {
   }
 });
 
-
-// Get total student count 
+// Get total student count
 router.get("/count", async (req, res) => {
   try {
     const totalStudents = await prisma.student.count();
@@ -398,6 +424,5 @@ router.get("/count", async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 });
-
 
 export default router;

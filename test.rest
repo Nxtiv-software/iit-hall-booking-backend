@@ -4,14 +4,17 @@ GET http://localhost:8800
 GET http://localhost:8800/admin/users
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzYyOTczMTk4LCJleHAiOjE3NjMwNTk1OTh9.ZY4TNQlVLEJoYkyuvNgHzKGsT07ZH4xNP4qWyeo3TLY
 
+### Get user roles
+GET http://localhost:8800/roles
+
 ### Create a user
 POST http://localhost:8800/auth/register 
 Content-Type: application/json
 
 {
-  "username": "vihan",
-  "password": "vihan",
-  "role": "admin"
+  "username": "garuka",
+  "password": "garuka",
+  "roleId": "6ae298d9-2334-4c64-b2ed-667d0eac2215"
 }
 
 ### Login a user
@@ -19,14 +22,14 @@ POST http://localhost:8800/auth/login
 Content-Type: application/json
 
 {
-  "username": "vihan",
-  "password": "vihan"
+  "username": "garuka",
+  "password": "garuka"
 }
 
 ### Create a booking
 POST http://localhost:8800/bookings 
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IiIsImlhdCI6MTc2MzQxMTc4NiwiZXhwIjoxNzYzNDk4MTg2fQ.MatmIgWDq1CGJ7c4xHpdUeUnC6g-vxL1n4txSaNfo5M
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9zZSI6IiIsImlhdCI6MTc2MzQxMTc4NiwiZXhwIjoxNzYzNDk4MTg2fQ.MatmIgWDq1CGJ7c4xHpdUeUnC6g-vxL1n4txSaNfo5M
 
 {
   "title": "Hall L5",
@@ -35,12 +38,12 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6I
 
 ### Admin1: Get Pending Bookings
 GET http://localhost:8800/approvals/admin1/pending
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9zZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
 
 ### Admin1: Approve Booking
 POST http://localhost:8800/approvals/1/admin1-review
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9zZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
 
 {
   "action": "approved",
@@ -50,9 +53,58 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6I
 ### Admin2: Final Approval
 POST http://localhost:8800/approvals/1/admin2-review
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9zZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
 
 {
   "action": "approved",
   "comment": "Final approval granted. Booking confirmed."
+}
+
+### Get all venues
+GET http://localhost:8800/venues
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODIxNDc5NywiZXhwIjoxNzY4MzAxMTk3fQ.sb_tCggCL_oIlAW6s3Psd-19mM6T5Jt71YlaDKaLpfM
+
+
+
+
+### Create a student profile
+POST http://localhost:8800/students/me
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODIxNjkyOSwiZXhwIjoxNzY4MzAzMzI5fQ.mSm6fK-xUqbq9Ddr9gBTXL-CVxQXDreP-O1Ktr5COsA
+
+{
+  "iitIdNumber": "2021001",
+  "societyName": "IEEE",
+  "societyPosition": "President",
+  "firstName": "Garuka",
+  "lastName": "Adithya",
+  "gender": "Male",
+  "phoneNum": "+94771234567",
+  "uniEmail": "john.doe@iit.ac.lk"
+}
+
+
+### Create a new request with form data
+POST http://localhost:8800/students/requests
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODIxNjkyOSwiZXhwIjoxNzY4MzAzMzI5fQ.mSm6fK-xUqbq9Ddr9gBTXL-CVxQXDreP-O1Ktr5COsA
+
+{
+  "venueId": "8da1c588-e442-43a7-ae2d-c095ee90b89e",
+  "requiredDate": "2026-01-20T10:00:00.000Z",
+  "form1Data": {
+    "societyname": "IEEE",
+    "eventtype": "Workshop",
+    "excoposition": "President",
+    "excomembername": "John Doe",
+    "eventtitle": "Tech Workshop 2026",
+    "participants": "50",
+    "description": "A comprehensive workshop on emerging technologies"
+  },
+  "form2Data": {
+    "additionalInfo": "Some additional information for form 2"
+  },
+  "form3Data": {},
+  "form4Data": {},
+  "form5Data": {}
 }
