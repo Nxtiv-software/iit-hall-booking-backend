@@ -248,11 +248,12 @@ router.get("/:studentId/requests", async (req, res) => {
         venue: true,
         status: true,
         attachments: true,
-        comments: {
+        approvals: {
           include: {
             admin: {
               include: { user: true },
             },
+            status: true,
           },
         },
         requestSlots: {

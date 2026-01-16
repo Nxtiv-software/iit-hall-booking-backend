@@ -64,8 +64,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9zZSI6I
 GET http://localhost:8800/venues
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODIxNDc5NywiZXhwIjoxNzY4MzAxMTk3fQ.sb_tCggCL_oIlAW6s3Psd-19mM6T5Jt71YlaDKaLpfM
 
-
-
+### Get student profile
+GET http://localhost:8800/students/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODU1ODA5MiwiZXhwIjoxNzY4NjQ0NDkyfQ.OxCOLL3xqDJHE7fgXnHXRlxwfIqnlH1rfs_EiUYJ6fI
 
 ### Create a student profile
 POST http://localhost:8800/students/me
@@ -83,6 +84,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4L
   "uniEmail": "john.doe@iit.ac.lk"
 }
 
+### GET student request
+GET http://localhost:8800/students/a3d2f461-9825-4d31-bbb2-3b45fcd5ce3c/requests
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODU1ODA5MiwiZXhwIjoxNzY4NjQ0NDkyfQ.OxCOLL3xqDJHE7fgXnHXRlxwfIqnlH1rfs_EiUYJ6fI
 
 ### Create a new request with form data
 POST http://localhost:8800/students/requests
