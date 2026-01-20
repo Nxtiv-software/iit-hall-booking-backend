@@ -8,14 +8,14 @@ const router = express.Router();
 router.post("/login", async (req, res) => {
   const { idToken } = req.body;
 
-  if (!idToken) return res.status(400).json({ message: "ID token is required" });
+  if (!idToken)
+    return res.status(400).json({ message: "ID token is required" });
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const email = decodedToken.email;
 
-    if (!email) 
-      return res.status(401).json({ message: "Invalid token" });
+    if (!email) return res.status(401).json({ message: "Invalid token" });
 
     const user = await prisma.user.findUnique({
       where: { uniEmail: email },
@@ -26,48 +26,62 @@ router.post("/login", async (req, res) => {
       },
     });
 
-    if (!user) 
-      return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({ user });
-
   } catch (error) {
     console.error(error);
     res.status(401).json({ message: "Unauthorized" });
   }
 });
 
-
 // Register to website
 router.post("/register", async (req, res) => {
   const { idToken, roleId } = req.body;
 
   if (!idToken || !roleId) {
-    return res.status(400).json({ message: "ID token and roleId are required" });
+    return res
+      .status(400)
+      .json({ message: "ID token and roleId are required" });
   }
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const email = decodedToken.email;
 
-    if (!email) 
-      return res.status(401).json({ message: "Invalid token" });
+    if (!email) return res.status(401).json({ message: "Invalid token" });
 
-    const existingUser = await prisma.user.findUnique({ where: { uniEmail: email } });
-    if (existingUser) 
+    const existingUser = await prisma.user.findUnique({
+      where: { uniEmail: email },
+    });
+    if (existingUser)
       return res.status(409).json({ message: "User already exists" });
 
     const role = await prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) 
-      return res.status(400).json({ message: "Invalid roleId" });
+    if (!role) return res.status(400).json({ message: "Invalid roleId" });
+
+    // Generate a unique username
+    let baseUsername = email.split("@")[0];
+    let username = baseUsername;
+    let counter = 1;
+
+    // Check if username exists and add a counter if needed
+    while (await prisma.user.findUnique({ where: { username } })) {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
 
     const user = await prisma.user.create({
       data: {
         uniEmail: email,
-        username: email.split("@")[0], 
+        username,
         role: { connect: { id: roleId } },
       },
-      select: { id: true, username: true, role: { select: { id: true, name: true } } },
+      select: {
+        id: true,
+        username: true,
+        role: { select: { id: true, name: true } },
+      },
     });
 
     res.json({ user, message: "User registered successfully" });

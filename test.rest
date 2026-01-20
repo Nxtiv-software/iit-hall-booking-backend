@@ -2,16 +2,15 @@ GET http://localhost:8800
 
 ### Get users (admin)
 GET http://localhost:8800/admin/users
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzYyOTczMTk4LCJleHAiOjE3NjMwNTk1OTh9.ZY4TNQlVLEJoYkyuvNgHzKGsT07ZH4xNP4qWyeo3TLY
-
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjA4MmU5NzVlMDdkZmE0OTYwYzdiN2I0ZmMxZDEwZjkxNmRjMmY1NWIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vaWl0LWhhbGxib29raW5nIiwiYXVkIjoiaWl0LWhhbGxib29raW5nIiwiYXV0aF90aW1lIjoxNzY4OTA1NDIwLCJ1c2VyX2lkIjoielJjd0loODBCM2UyWHFtcWJ2MDlYQUpxcWFYMiIsInN1YiI6InpSY3dJaDgwQjNlMlhxbXFidjA5WEFKcXFhWDIiLCJpYXQiOjE3Njg5MDU0MjAsImV4cCI6MTc2ODkwOTAyMCwiZW1haWwiOiJib2ppdGhhMjAwMEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYm9qaXRoYTIwMDBAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.nVCmhK-LALFG4_cKoSr_PPksM4TCO2_s58aDaYesRAn-xbnsLGngpDxN-h3_-o8Np0DYr_5X1Y5XGQRjsDJ66zfT8acdOaGr3Nr56oHvW-axXUxuPSY-BDQZ8K2DgPHwi94ODVE2XNOxfYR5lM_jJb5swJlj2xq8mW-4RwyUQk1h15rRRjorX8LjsUF2xGgO01kauyyP2o_djO8yOcgd2iH62AHiE_KsSkrgLFUVcYO1GTzU6qGbbMndvBQ-XqLhcGGLY78E98P2hAzqFI4dvWolXpBG9ltFt2ORrpcv3XO890-vIIDxVZxyIsH2QPq6Lm8a36fcCUgdcmHXVgtXoQ
 ### Create a user
 POST http://localhost:8800/auth/register 
 Content-Type: application/json
 
 {
-  "username": "vihan",
-  "password": "vihan",
-  "role": "admin"
+  "username": "bojitha2000@gmail.com",
+  "password": "bojitha",
+  "roleId": "f874d099-248b-4b00-b0aa-4b60903a4172"
 }
 
 ### Login a user
@@ -19,8 +18,9 @@ POST http://localhost:8800/auth/login
 Content-Type: application/json
 
 {
-  "username": "vihan",
-  "password": "vihan"
+  "username": "bojitha2000@gmail.com",
+  "password": "bojitha",
+  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjA4MmU5NzVlMDdkZmE0OTYwYzdiN2I0ZmMxZDEwZjkxNmRjMmY1NWIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vaWl0LWhhbGxib29raW5nIiwiYXVkIjoiaWl0LWhhbGxib29raW5nIiwiYXV0aF90aW1lIjoxNzY4OTA2MzQ5LCJ1c2VyX2lkIjoielJjd0loODBCM2UyWHFtcWJ2MDlYQUpxcWFYMiIsInN1YiI6InpSY3dJaDgwQjNlMlhxbXFidjA5WEFKcXFhWDIiLCJpYXQiOjE3Njg5MDYzNDksImV4cCI6MTc2ODkwOTk0OSwiZW1haWwiOiJib2ppdGhhMjAwMEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYm9qaXRoYTIwMDBAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.RuYULsGQjwNPe-kXOjZef8utgIQLdnTnsK5DUgnX5Z-cvxP5YPxoaUfI0I154y8l8RIRSFeHBv6EyZYGByCXYsTTWS78Bt8Fm15GLg73rWuFwaFXPINeY3rExmrTbQOWXpxSKptk_2H_GHiVmFePLtEMoEnuar-fNN1Kp-KoPCmsa18iCMSsM8ZUd7CC8RFfd_w3R3Kks76IyWFtyfCZk_n1nnFebJ7pzmrIWh-yg1iocBhm7_HlvWcBx3D0QzdR8UzMblMaUno9aOtYvG8Q5_iFmsgxrSQMtNhVd1EjaESHkpKYc6A4-TKEa3P7qFb6zrNdyIYz12FyNZvHtmdANw"
 }
 
 ### Create a booking
@@ -51,8 +51,89 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6I
 POST http://localhost:8800/approvals/1/admin2-review
 Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
-
+eyJhbGciOi
 {
   "action": "approved",
   "comment": "Final approval granted. Booking confirmed."
 }
+
+### Get all venues
+GET http://localhost:8800/venues
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODIxNDc5NywiZXhwIjoxNzY4MzAxMTk3fQ.sb_tCggCL_oIlAW6s3Psd-19mM6T5Jt71YlaDKaLpfM
+
+### Get student profile
+GET http://localhost:8800/students/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODU1ODA5MiwiZXhwIjoxNzY4NjQ0NDkyfQ.OxCOLL3xqDJHE7fgXnHXRlxwfIqnlH1rfs_EiUYJ6fI
+
+### Create a student profile
+POST http://localhost:8800/students/me
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODIxNjkyOSwiZXhwIjoxNzY4MzAzMzI5fQ.mSm6fK-xUqbq9Ddr9gBTXL-CVxQXDreP-O1Ktr5COsA
+
+{
+  "iitIdNumber": "2021001",
+  "societyName": "IEEE",
+  "societyPosition": "President",
+  "firstName": "Garuka",
+  "lastName": "Adithya",
+  "gender": "Male",
+  "phoneNum": "+94771234567",
+  "uniEmail": "john.doe@iit.ac.lk"
+}
+
+### GET student request
+GET http://localhost:8800/students/a3d2f461-9825-4d31-bbb2-3b45fcd5ce3c/requests
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODU1ODA5MiwiZXhwIjoxNzY4NjQ0NDkyfQ.OxCOLL3xqDJHE7fgXnHXRlxwfIqnlH1rfs_EiUYJ6fI
+
+### Create a new request with form data
+POST http://localhost:8800/students/requests
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODIxNjkyOSwiZXhwIjoxNzY4MzAzMzI5fQ.mSm6fK-xUqbq9Ddr9gBTXL-CVxQXDreP-O1Ktr5COsA
+
+{
+  "venueId": "8da1c588-e442-43a7-ae2d-c095ee90b89e",
+  "requiredDate": "2026-01-20T10:00:00.000Z",
+  "form1Data": {
+    "societyname": "IEEE",
+    "eventtype": "Workshop",
+    "excoposition": "President",
+    "excomembername": "John Doe",
+    "eventtitle": "Tech Workshop 2026",
+    "participants": "50",
+    "description": "A comprehensive workshop on emerging technologies"
+  },
+  "form2Data": {
+    "additionalInfo": "Some additional information for form 2"
+  },
+  "form3Data": {},
+  "form4Data": {},
+  "form5Data": {}
+}
+
+### Get admin profile
+GET http://localhost:8800/admin/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdiZDZhMDk4LWFjZWUtNDE1Yy04ZGI4LWQyMThhMTRkYTNkOSIsInJvbGVJZCI6IjZhZTI5OGQ5LTIzMzQtNGM2NC1iMmVkLTY2N2QwZWFjMjIxNSIsImlhdCI6MTc2ODU1ODA5MiwiZXhwIjoxNzY4NjQ0NDkyfQ.OxCOLL3xqDJHE7fgXnHXRlxwfIqnlH1rfs_EiUYJ6fI
+
+### Create an admin profile
+POST http://localhost:8800/admins/me
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjA4MmU5NzVlMDdkZmE0OTYwYzdiN2I0ZmMxZDEwZjkxNmRjMmY1NWIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vaWl0LWhhbGxib29raW5nIiwiYXVkIjoiaWl0LWhhbGxib29raW5nIiwiYXV0aF90aW1lIjoxNzY4OTA1NjA1LCJ1c2VyX2lkIjoielJjd0loODBCM2UyWHFtcWJ2MDlYQUpxcWFYMiIsInN1YiI6InpSY3dJaDgwQjNlMlhxbXFidjA5WEFKcXFhWDIiLCJpYXQiOjE3Njg5MDU2MDUsImV4cCI6MTc2ODkwOTIwNSwiZW1haWwiOiJib2ppdGhhMjAwMEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYm9qaXRoYTIwMDBAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.skKZURaJoHTTW4sd1_2Cm1KFmdHox2ehrlOKolnMSPv8jTer6P9BQb8lWiN2-mwZVYQtdb5JddYnsGLponVHhc_hx2YNLPcCrDJjegzHzZGEaCCP7iJpLJwzsBLtxgZR1aSBZsRAtMilj1uCFrmRfrtkyCFh0_x-R8X-qlS8XLtuMKwx-1fHpHVh7VAFMcuudnPkkX9jjbJIRVrXGXMgl3wS8rDgH55PJWmNP922Toqnq2HzSOE4lsUFbTpLySptbxbS9GwecwDUe-jTr-xp9L0Pt8Uq7XpVqY4V_b48K0uE_a0JMw9_4xkXgV7neHCj0-dy2tREJpDEpTTW9dQujg
+
+{
+  "adminLevel": 1,
+  "firstName": "Bojitha",
+  "lastName": "Nawarathna",
+  "gender": "Male",
+  "phoneNum": "+94771234567",
+  "uniEmail": "bojitha2000@iit.ac.lk",
+  "buildingId": "dc9c8bfa-9e3f-468c-af41-a33df1eb1100",
+  "departmentId": "18ab8bc8-034e-47da-a797-00b5719d1342"
+}
+
+### Get buildings
+GET http://localhost:8800/buildings
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjA4MmU5NzVlMDdkZmE0OTYwYzdiN2I0ZmMxZDEwZjkxNmRjMmY1NWIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vaWl0LWhhbGxib29raW5nIiwiYXVkIjoiaWl0LWhhbGxib29raW5nIiwiYXV0aF90aW1lIjoxNzY4ODQzNzQ4LCJ1c2VyX2lkIjoibFg4b01RRkhBTVNLWk1NOE9XM0Fwc1NYSnVBMyIsInN1YiI6ImxYOG9NUUZIQU1TS1pNTThPVzNBcHNTWEp1QTMiLCJpYXQiOjE3Njg4NDM4ODAsImV4cCI6MTc2ODg0NzQ4MCwiZW1haWwiOiJib2ppdGhhMjAwM0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYm9qaXRoYTIwMDNAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.shF_Rn4wVDNSLdX4vNMlVbzOAt0v1tPQgHPHjGRb8M3ocXDCH_lsh7xXdKeSs3Rcv-CHVQoeGDQWNYJaTILzd01yzmy2kGrHH3bRgkxDQWJYGw0t1N-ApfXOkowqUkrSS2-9SQjg0jrlFi6vJD7eYvFKRlHuLILeUcSpvEnWrpxucMcsk8SRkh_1tNkB_Kshbog2zz_H-8Gphtb7la8dsMwppxjEEtIRAhTiVHxdnfdAaZUgXDq0A44Og0aqVutW9wMl7uz9TH0CmtpF5QwZGsegbGuENfDjCW5JDOY4Mz7KPnlY4M-j87BO24hQz11Zq2tQ7iDziohcMJxp35YEeg
+
+### Get departments
+GET http://localhost:8800/departments
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjA4MmU5NzVlMDdkZmE0OTYwYzdiN2I0ZmMxZDEwZjkxNmRjMmY1NWIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vaWl0LWhhbGxib29raW5nIiwiYXVkIjoiaWl0LWhhbGxib29raW5nIiwiYXV0aF90aW1lIjoxNzY4ODQzNzQ4LCJ1c2VyX2lkIjoibFg4b01RRkhBTVNLWk1NOE9XM0Fwc1NYSnVBMyIsInN1YiI6ImxYOG9NUUZIQU1TS1pNTThPVzNBcHNTWEp1QTMiLCJpYXQiOjE3Njg4NDM4ODAsImV4cCI6MTc2ODg0NzQ4MCwiZW1haWwiOiJib2ppdGhhMjAwM0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYm9qaXRoYTIwMDNAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.shF_Rn4wVDNSLdX4vNMlVbzOAt0v1tPQgHPHjGRb8M3ocXDCH_lsh7xXdKeSs3Rcv-CHVQoeGDQWNYJaTILzd01yzmy2kGrHH3bRgkxDQWJYGw0t1N-ApfXOkowqUkrSS2-9SQjg0jrlFi6vJD7eYvFKRlHuLILeUcSpvEnWrpxucMcsk8SRkh_1tNkB_Kshbog2zz_H-8Gphtb7la8dsMwppxjEEtIRAhTiVHxdnfdAaZUgXDq0A44Og0aqVutW9wMl7uz9TH0CmtpF5QwZGsegbGuENfDjCW5JDOY4Mz7KPnlY4M-j87BO24hQz11Zq2tQ7iDziohcMJxp35YEeg

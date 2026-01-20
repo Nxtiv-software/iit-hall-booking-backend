@@ -60,15 +60,23 @@ router.post("/me", async (req, res) => {
       },
     });
 
-    const admin = await prisma.admin.create({
-      data: {
-        adminLevel,
-        buildingId,
-        departmentId,
-        user: {
-          connect: { id: req.user.id },
-        },
+    const adminData = {
+      adminLevel,
+      user: {
+        connect: { id: req.user.id },
       },
+    };
+
+    if (buildingId) {
+      adminData.building = { connect: { id: buildingId } };
+    }
+
+    if (departmentId) {
+      adminData.department = { connect: { id: departmentId } };
+    }
+
+    const admin = await prisma.admin.create({
+      data: adminData,
     });
 
     return res.status(201).json({
@@ -115,13 +123,21 @@ router.put("/me", async (req, res) => {
         },
     });
 
+    const updateData = {
+      adminLevel,
+    };
+
+    if (buildingId !== undefined) {
+      updateData.building = buildingId ? { connect: { id: buildingId } } : { disconnect: true };
+    }
+
+    if (departmentId !== undefined) {
+      updateData.department = departmentId ? { connect: { id: departmentId } } : { disconnect: true };
+    }
+
     const admin = await prisma.admin.update({
-        where: { userId: req.user.id },
-        data: {
-            adminLevel,
-            buildingId,
-            departmentId,
-        },
+      where: { userId: req.user.id },
+      data: updateData,
     });
 
 
