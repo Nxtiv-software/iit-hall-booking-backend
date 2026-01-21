@@ -4,14 +4,17 @@ GET http://localhost:8800
 GET http://localhost:8800/admin/users
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzYyOTczMTk4LCJleHAiOjE3NjMwNTk1OTh9.ZY4TNQlVLEJoYkyuvNgHzKGsT07ZH4xNP4qWyeo3TLY
 
+### GET role ids
+GET http://localhost:8800/roles
+
 ### Create a user
 POST http://localhost:8800/auth/register 
 Content-Type: application/json
 
 {
-  "username": "vihan",
-  "password": "vihan",
-  "role": "admin"
+  "username": "garuka",
+  "password": "garuka",
+  "roleId": "2fb20944-e878-440e-929f-359eb576ba8e"
 }
 
 ### Login a user
