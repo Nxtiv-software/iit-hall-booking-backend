@@ -1,0 +1,66 @@
+### ========================================
+### HELPER REQUESTS TO GET IDs FOR TESTING
+### ========================================
+
+### Get all students (to find studentId)
+GET http://localhost:8800/admin/students
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+
+### Get all venues (to find venueId)
+GET http://localhost:8800/venues
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get all time slots (optional, for timeSlotIds)
+GET http://localhost:8800/timeslots
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### ========================================
+### TEST REQUEST CREATION WITH FORM DATA
+### ========================================
+
+### Step 1: Login as a student to get token
+POST http://localhost:8800/auth/login
+Content-Type: application/json
+
+{
+  "username": "student_username",
+  "password": "student_password"
+}
+
+### Step 2: Create request with form data (replace IDs and token)
+POST http://localhost:8800/requests/requests
+Content-Type: application/json
+Authorization: Bearer YOUR_STUDENT_TOKEN_HERE
+
+{
+  "studentId": "YOUR_STUDENT_USER_ID",
+  "venueId": "YOUR_VENUE_ID",
+  "requiredDate": "2026-01-25T14:00:00.000Z",
+  "form1Data": {
+    "societyname": "IEEE",
+    "eventtype": "Workshop",
+    "excoposition": "President",
+    "excomembername": "John Doe",
+    "eventtitle": "Tech Workshop 2026",
+    "participants": "50",
+    "description": "A comprehensive workshop on emerging technologies and innovation"
+  },
+  "form2Data": {
+    "equipmentNeeded": "Projector, Microphone",
+    "setupTime": "30 minutes before"
+  },
+  "form3Data": {
+    "cateringRequired": "yes",
+    "dietaryRestrictions": "Vegetarian options needed"
+  },
+  "form4Data": {},
+  "form5Data": {}
+}
+
+### Step 3: Get all requests to verify creation
+GET http://localhost:8800/requests
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Step 4: Get specific student's requests
+GET http://localhost:8800/students/YOUR_STUDENT_ID/requests
+Authorization: Bearer YOUR_TOKEN_HERE

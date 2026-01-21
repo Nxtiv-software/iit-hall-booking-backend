@@ -26,7 +26,7 @@ Content-Type: application/json
 ### Create a booking
 POST http://localhost:8800/bookings 
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IiIsImlhdCI6MTc2MzQxMTc4NiwiZXhwIjoxNzYzNDk4MTg2fQ.MatmIgWDq1CGJ7c4xHpdUeUnC6g-vxL1n4txSaNfo5M
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9zZSI6IiIsImlhdCI6MTc2MzQxMTc4NiwiZXhwIjoxNzYzNDk4MTg2fQ.MatmIgWDq1CGJ7c4xHpdUeUnC6g-vxL1n4txSaNfo5M
 
 {
   "title": "Hall L5",
@@ -35,12 +35,12 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6I
 
 ### Admin1: Get Pending Bookings
 GET http://localhost:8800/approvals/admin1/pending
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9zZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
 
 ### Admin1: Approve Booking
 POST http://localhost:8800/approvals/1/admin1-review
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9zZSI6IiIsImlhdCI6MTc2MzMwNDg1NiwiZXhwIjoxNzYzMzkxMjU2fQ.xEMcY8eyWVWMZEvZlQMc7h0BGCBVk3SUhpORugp4FoY
 
 {
   "action": "approved",

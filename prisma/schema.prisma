@@ -11,7 +11,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 /**
@@ -201,6 +200,7 @@ model Request {
   venue   Venue   @relation(fields: [venueId], references: [id])
   status  Status  @relation(fields: [statusId], references: [id])
 
+  formData     Json?
   title        String?
   description  String?
   attendance   Int?
@@ -281,12 +281,12 @@ model Resource {
 model Venue {
   id String @id @default(uuid())
 
-  name        String
-  description String?
-  isAvailable Boolean? @default(true)
+  name                String
+  description         String?
+  isAvailable         Boolean? @default(true)
   capacityAcademic    String?
   capacityExamination String?
-  floorNumber String?
+  floorNumber         String?
 
   buildingId String?
   building   Building? @relation(fields: [buildingId], references: [id])
@@ -294,7 +294,7 @@ model Venue {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  requests       Request[]
+  requests Request[]
   // venueResources VenueResource[]
 }
 
