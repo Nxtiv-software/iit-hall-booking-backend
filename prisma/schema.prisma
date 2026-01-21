@@ -37,14 +37,14 @@ model User {
   roleId String
   role   Role   @relation(fields: [roleId], references: [id])
 
-  username  String  @unique
-  password  String
+  username  String?  @unique
   firstName String?
   lastName  String?
   uniEmail  String? @unique
   gender    String?
   avatarUrl String?
   phoneNum  String?
+  isSuperAdmin Boolean? @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,125 +1,93 @@
 import express from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import prisma from "../prismaClient.js";
+import admin from "../Firebase/firebaseAdmin.js";
 
 const router = express.Router();
 
-// Register a new user
-router.post("/register", async (req, res) => {
-  const { username, password, roleId } = req.body;
+// Login to account
+router.post("/login", async (req, res) => {
+  const { idToken } = req.body;
 
-  if (!roleId) {
-    return res.status(400).json({ message: "roleId is required" });
+  if (!idToken)
+    return res.status(400).json({ message: "ID token is required" });
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const email = decodedToken.email;
+
+    if (!email) return res.status(401).json({ message: "Invalid token" });
+
+    const user = await prisma.user.findUnique({
+      where: { uniEmail: email },
+      select: {
+        id: true,
+        username: true,
+        role: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ user });
+  } catch (error) {
+    console.error(error);
+    res.status(401).json({ message: "Unauthorized" });
+  }
+});
+
+// Register to website
+router.post("/register", async (req, res) => {
+  const { idToken, roleId } = req.body;
+
+  if (!idToken || !roleId) {
+    return res
+      .status(400)
+      .json({ message: "ID token and roleId are required" });
   }
 
-  // encrypt the password
-  const hashedPassword = bcrypt.hashSync(password, 8);
-
-  //save the new user and hashed password to the db
   try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const email = decodedToken.email;
+
+    if (!email) return res.status(401).json({ message: "Invalid token" });
+
     const existingUser = await prisma.user.findUnique({
-      where: { username },
+      where: { uniEmail: email },
     });
+    if (existingUser)
+      return res.status(409).json({ message: "User already exists" });
 
-    if (existingUser) {
-      return res.status(409).json({ message: "Username already exists" });
-    }
+    const role = await prisma.role.findUnique({ where: { id: roleId } });
+    if (!role) return res.status(400).json({ message: "Invalid roleId" });
 
-    const role = await prisma.role.findUnique({
-      where: { id: roleId },
-    });
+    // Generate a unique username
+    let baseUsername = email.split("@")[0];
+    let username = baseUsername;
+    let counter = 1;
 
-    if (!role) {
-      return res.status(400).json({ message: "Invalid roleId" });
+    // Check if username exists and add a counter if needed
+    while (await prisma.user.findUnique({ where: { username } })) {
+      username = `${baseUsername}${counter}`;
+      counter++;
     }
 
     const user = await prisma.user.create({
       data: {
+        uniEmail: email,
         username,
-        password: hashedPassword,
-        role: {
-          connect: { id: role.id },
-        },
+        role: { connect: { id: roleId } },
       },
-    });
-
-    // create a token
-    const token = jwt.sign(
-      { id: user.id, roleId: user.roleId },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
-    );
-
-    return res.json({
-      token,
-      message: "User registered successfully",
-      user: {
-        id: user.id,
-        username: user.username,
-        roleId: user.roleId,
-      },
-    });
-  } catch (error) {
-    return res.status(503).json({ message: error.message });
-  }
-});
-
-router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: {
-        username: username,
-      },
-      select: { 
-        id: true, 
-        roleId: true, 
-        password: true, 
+      select: {
+        id: true,
         username: true,
-        role: {  // include role name
-          select: { 
-            id: true, 
-            name: true 
-          }
-        }
+        role: { select: { id: true, name: true } },
       },
     });
 
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
-    }
-
-    const passwordIsValid = bcrypt.compareSync(password, user.password);
-
-    if (!passwordIsValid) {
-      return res.status(401).send({ message: "Invalid Password" });
-    }
-
-    // then we have a successful login
-    const token = jwt.sign(
-      { id: user.id, roleId: user.roleId },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
-    );
-
-    return res.json({
-      token,
-      message: "User login successfully",
-      user: {
-        id: user.id,
-        username: user.username,
-        roleId: user.roleId,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    return res.status(503).json({ message: error.message });
+    res.json({ user, message: "User registered successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error creating user" });
   }
 });
 
