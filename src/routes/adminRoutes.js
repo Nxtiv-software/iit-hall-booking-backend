@@ -8,7 +8,7 @@ router.get("/me", async (req, res) => {
   try {
     const admin = await prisma.admin.findUnique({
       where: { userId: req.user.id },
-      include: { 
+      include: {
         user: true,
         building: true,
         department: true,
@@ -28,7 +28,7 @@ router.get("/me", async (req, res) => {
 //Create admin profile
 router.post("/me", async (req, res) => {
   try {
-    const { 
+    const {
       adminLevel,
       firstName,
       lastName,
@@ -67,12 +67,18 @@ router.post("/me", async (req, res) => {
       },
     };
 
+    // Only connect building if buildingId is provided
     if (buildingId) {
-      adminData.building = { connect: { id: buildingId } };
+      adminData.building = {
+        connect: { id: buildingId },
+      };
     }
 
+    // Only connect department if departmentId is provided
     if (departmentId) {
-      adminData.department = { connect: { id: departmentId } };
+      adminData.department = {
+        connect: { id: departmentId },
+      };
     }
 
     const admin = await prisma.admin.create({
@@ -91,7 +97,7 @@ router.post("/me", async (req, res) => {
 //Update admin profile
 router.put("/me", async (req, res) => {
   try {
-    const { 
+    const {
       adminLevel,
       firstName,
       lastName,
@@ -101,7 +107,7 @@ router.put("/me", async (req, res) => {
       uniEmail,
       buildingId,
       departmentId,
-     } = req.body;
+    } = req.body;
 
     const adminExist = await prisma.admin.findUnique({
       where: { userId: req.user.id },
@@ -112,34 +118,39 @@ router.put("/me", async (req, res) => {
     }
 
     await prisma.user.update({
-        where: { id: req.user.id },
-        data: {
-            firstName,
-            lastName,
-            gender,
-            avatarUrl,
-            phoneNum,
-            uniEmail,
-        },
+      where: { id: req.user.id },
+      data: {
+        firstName,
+        lastName,
+        gender,
+        avatarUrl,
+        phoneNum,
+        uniEmail,
+      },
     });
 
-    const updateData = {
+    const adminUpdateData = {
       adminLevel,
     };
 
+    // Handle building connection/disconnection
     if (buildingId !== undefined) {
-      updateData.building = buildingId ? { connect: { id: buildingId } } : { disconnect: true };
+      adminUpdateData.building = buildingId
+        ? { connect: { id: buildingId } }
+        : { disconnect: true };
     }
 
+    // Handle department connection/disconnection
     if (departmentId !== undefined) {
-      updateData.department = departmentId ? { connect: { id: departmentId } } : { disconnect: true };
+      adminUpdateData.department = departmentId
+        ? { connect: { id: departmentId } }
+        : { disconnect: true };
     }
 
     const admin = await prisma.admin.update({
       where: { userId: req.user.id },
-      data: updateData,
+      data: adminUpdateData,
     });
-
 
     return res.json({
       message: "Admin profile updated successfully",
@@ -153,7 +164,6 @@ router.put("/me", async (req, res) => {
 //Delete admin profile
 router.delete("/me", async (req, res) => {
   try {
-
     await prisma.admin.delete({
       where: { userId: req.user.id },
     });
@@ -173,30 +183,30 @@ router.delete("/me", async (req, res) => {
 //Get all bookings by admin id
 router.get("/:adminId/bookings", async (req, res) => {
   try {
-const { adminId } = req.params;
+    const { adminId } = req.params;
 
     const bookings = await prisma.booking.findMany({
       where: {
-        adminId: adminId 
+        adminId: adminId,
       },
       include: {
         admin: {
           include: {
-            user: true
-          }
+            user: true,
+          },
         },
         request: {
           include: {
             student: {
               include: {
                 user: true,
-              }
+              },
             },
             venue: true,
             status: true,
-          }
+          },
         },
-      }
+      },
     });
 
     return res.json(bookings);
@@ -214,8 +224,7 @@ router.get("/:adminId/pending-requests", async (req, res) => {
       where: { id: adminId },
     });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+    if (!admin) return res.status(403).json({ message: "Not admin" });
 
     const level = admin.adminLevel;
 
@@ -223,21 +232,21 @@ router.get("/:adminId/pending-requests", async (req, res) => {
 
     if (level === 3) {
       filter = {
-        venue: { buildingId: admin.buildingId }
+        venue: { buildingId: admin.buildingId },
       };
     }
 
     if (level === 4) {
       filter = {
-        departmentId: admin.departmentId
+        departmentId: admin.departmentId,
       };
     }
 
     const status = await prisma.status.findUnique({
-      where: { name: "PENDING" }
+      where: { name: "PENDING" },
     });
 
-    if (!status) 
+    if (!status)
       return res.status(500).json({ message: "Pending status not found" });
 
     let approvalFilter = {};
@@ -250,8 +259,8 @@ router.get("/:adminId/pending-requests", async (req, res) => {
       const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1); // e.g., level 3 → [1,2]
       approvalFilter = {
         every: {
-          OR: requiredLevels.map(l => ({ adminLevel: l }))
-        }
+          OR: requiredLevels.map((l) => ({ adminLevel: l })),
+        },
       };
     }
 
@@ -259,16 +268,16 @@ router.get("/:adminId/pending-requests", async (req, res) => {
       where: {
         statusId: status.id,
         approvals: {
-          none: { adminLevel: level }, 
-          ...approvalFilter
+          none: { adminLevel: level },
+          ...approvalFilter,
         },
-        ...filter
+        ...filter,
       },
       include: {
         student: { include: { user: true } },
         venue: true,
         status: true,
-      }
+      },
     });
 
     return res.json(requests);
@@ -286,8 +295,7 @@ router.get("/:adminId/rejected-requests", async (req, res) => {
       where: { id: adminId },
     });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+    if (!admin) return res.status(403).json({ message: "Not admin" });
 
     const level = admin.adminLevel;
 
@@ -295,21 +303,21 @@ router.get("/:adminId/rejected-requests", async (req, res) => {
 
     if (level === 3) {
       filter = {
-        venue: { buildingId: admin.buildingId }
+        venue: { buildingId: admin.buildingId },
       };
     }
 
     if (level === 4) {
       filter = {
-        departmentId: admin.departmentId
+        departmentId: admin.departmentId,
       };
     }
 
     const status = await prisma.status.findUnique({
-      where: { name: "REJECTED" }
+      where: { name: "REJECTED" },
     });
 
-    if (!status) 
+    if (!status)
       return res.status(500).json({ message: "Rejected status not found" });
 
     // Hierarchical approval filter
@@ -320,25 +328,25 @@ router.get("/:adminId/rejected-requests", async (req, res) => {
       approvalFilter = {};
     } else {
       // Levels 2-4: must have approvals from all previous levels
-      const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1); 
+      const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1);
       approvalFilter = {
         every: {
-          OR: requiredLevels.map(l => ({ adminLevel: l }))
-        }
+          OR: requiredLevels.map((l) => ({ adminLevel: l })),
+        },
       };
     }
 
     const requests = await prisma.request.findMany({
       where: {
-        statusId: status.id, 
+        statusId: status.id,
         approvals: approvalFilter,
-        ...filter
+        ...filter,
       },
       include: {
         student: { include: { user: true } },
         venue: true,
         status: true,
-      }
+      },
     });
 
     return res.json(requests);
@@ -346,7 +354,6 @@ router.get("/:adminId/rejected-requests", async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 });
-
 
 //Approve a request
 router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
@@ -358,11 +365,10 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
       where: { id: adminId },
     });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+    if (!admin) return res.status(403).json({ message: "Not admin" });
 
     const status = await prisma.status.findUnique({
-      where: { name: "APPROVED" }
+      where: { name: "APPROVED" },
     });
 
     if (!status) return res.status(500).json({ message: "Status not found" });
@@ -375,20 +381,20 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
         adminLevel: admin.adminLevel,
         statusId: status.id,
         comment,
-      }
+      },
     });
 
     // Check how many approvals exist
     const approvals = await prisma.approval.findMany({
       where: { requestId },
-      orderBy: { adminLevel: "asc" }
+      orderBy: { adminLevel: "asc" },
     });
 
-    const approvedLevels = approvals.map(a => a.adminLevel);
+    const approvedLevels = approvals.map((a) => a.adminLevel);
 
     const requiredLevels = [1, 2, 3, 4];
 
-    const isComplete = requiredLevels.every(l => approvedLevels.includes(l));
+    const isComplete = requiredLevels.every((l) => approvedLevels.includes(l));
 
     if (isComplete) {
       // Mark request as fully approved
@@ -401,13 +407,12 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
       await prisma.booking.create({
         data: {
           requestId,
-          adminId: admin.id
-        }
+          adminId: admin.id,
+        },
       });
     }
 
     return res.json({ message: "Approved", approval });
-
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -423,11 +428,10 @@ router.post("/:adminId/requests/:requestId/reject", async (req, res) => {
       where: { id: adminId },
     });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+    if (!admin) return res.status(403).json({ message: "Not admin" });
 
     const status = await prisma.status.findUnique({
-      where: { name: "REJECTED" }
+      where: { name: "REJECTED" },
     });
 
     if (!status) return res.status(500).json({ message: "Status not found" });
@@ -438,18 +442,17 @@ router.post("/:adminId/requests/:requestId/reject", async (req, res) => {
         adminId: admin.id,
         adminLevel: admin.adminLevel,
         statusId: status.id,
-        comment
-      }
+        comment,
+      },
     });
 
     // Update request status
     await prisma.request.update({
       where: { id: requestId },
-      data: { statusId: status.id }
+      data: { statusId: status.id },
     });
 
     return res.json({ message: "Request rejected" });
-
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -459,7 +462,7 @@ router.post("/:adminId/requests/:requestId/reject", async (req, res) => {
 router.put("/:adminId/requests/:requestId/approval", async (req, res) => {
   try {
     const { adminId, requestId } = req.params;
-    const { adminLevel, comment } = req.body; 
+    const { adminLevel, comment } = req.body;
 
     const approval = await prisma.approval.findFirst({
       where: {
@@ -478,7 +481,10 @@ router.put("/:adminId/requests/:requestId/approval", async (req, res) => {
       data: { comment },
     });
 
-    return res.json({ message: "Comment updated successfully", approval: updatedApproval });
+    return res.json({
+      message: "Comment updated successfully",
+      approval: updatedApproval,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -544,131 +550,138 @@ router.get("/:adminId/pending-count", async (req, res) => {
 });
 
 //Add a resource
-router.post("/:adminId/departments/:departmentId/resources", async (req, res) => {
-  try {
-    const { adminId, departmentId } = req.params;
-    const { name, isAvailable } = req.body;
+router.post(
+  "/:adminId/departments/:departmentId/resources",
+  async (req, res) => {
+    try {
+      const { adminId, departmentId } = req.params;
+      const { name, isAvailable } = req.body;
 
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
+      const admin = await prisma.admin.findUnique({
+        where: { id: adminId },
+      });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+      if (!admin) return res.status(403).json({ message: "Not admin" });
 
-    const department = await prisma.department.findUnique({
-      where: { id: departmentId },
-    })
+      const department = await prisma.department.findUnique({
+        where: { id: departmentId },
+      });
 
-    if (!department)
-      return res.status(404).json({ message: "Department not found" });
+      if (!department)
+        return res.status(404).json({ message: "Department not found" });
 
-    const resource = await prisma.resource.create({
-      data: {
-        name,
-        isAvailable,
-        departmentId,
-      }
-    });
+      const resource = await prisma.resource.create({
+        data: {
+          name,
+          isAvailable,
+          departmentId,
+        },
+      });
 
-    return res.json({ 
-      message: "Resource Added!", 
-      resource 
-    });
-
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
+      return res.json({
+        message: "Resource Added!",
+        resource,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+);
 
 //Update a resource
-router.put("/:adminId/departments/:departmentId/resources/:resourceId", async (req, res) => {
-  try {
-    const { adminId, departmentId, resourceId } = req.params;
-    const { name, isAvailable } = req.body;
+router.put(
+  "/:adminId/departments/:departmentId/resources/:resourceId",
+  async (req, res) => {
+    try {
+      const { adminId, departmentId, resourceId } = req.params;
+      const { name, isAvailable } = req.body;
 
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
+      const admin = await prisma.admin.findUnique({
+        where: { id: adminId },
+      });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+      if (!admin) return res.status(403).json({ message: "Not admin" });
 
-    const department = await prisma.department.findUnique({
-      where: { id: departmentId },
-    })
+      const department = await prisma.department.findUnique({
+        where: { id: departmentId },
+      });
 
-    if (!department)
-      return res.status(404).json({ message: "Department not found" });
+      if (!department)
+        return res.status(404).json({ message: "Department not found" });
 
-    const resource = await prisma.resource.findFirst({
+      const resource = await prisma.resource.findFirst({
         where: {
           id: resourceId,
         },
-      })
+      });
 
       if (!resource)
-        return res.status(404).json({ message: "Resource not found in this department" })
+        return res
+          .status(404)
+          .json({ message: "Resource not found in this department" });
 
-    const updatedResource = await prisma.resource.update({
-      where: { id: resourceId },
+      const updatedResource = await prisma.resource.update({
+        where: { id: resourceId },
         data: {
           departmentId,
           name,
           isAvailable,
         },
-    });
+      });
 
-    return res.json({ 
-      message: "Resource Updated!", 
-      updatedResource 
-    });
-
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
+      return res.json({
+        message: "Resource Updated!",
+        updatedResource,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+);
 
 //Delete a resource
-router.delete("/:adminId/departments/:departmentId/resources/:resourceId", async (req, res) => {
-  try {
-    const { adminId, departmentId, resourceId } = req.params;
+router.delete(
+  "/:adminId/departments/:departmentId/resources/:resourceId",
+  async (req, res) => {
+    try {
+      const { adminId, departmentId, resourceId } = req.params;
 
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
+      const admin = await prisma.admin.findUnique({
+        where: { id: adminId },
+      });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+      if (!admin) return res.status(403).json({ message: "Not admin" });
 
-    const resource = await prisma.resource.findFirst({
+      const resource = await prisma.resource.findFirst({
         where: {
           id: resourceId,
           departmentId,
         },
-      })
+      });
 
       if (!resource)
-        return res.status(404).json({ message: "Resource not found in this department" })
+        return res
+          .status(404)
+          .json({ message: "Resource not found in this department" });
 
-    await prisma.resource.delete({
+      await prisma.resource.delete({
         where: { id: resourceId },
-      })
+      });
 
-    return res.json({ 
-      message: "Resource Deleted!" 
-    });
-
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
+      return res.json({
+        message: "Resource Deleted!",
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+);
 
 //Add a venue
 router.post("/:adminId/buildings/:buildingId/venues", async (req, res) => {
   try {
     const { adminId, buildingId } = req.params;
-    const { 
+    const {
       name,
       description,
       type,
@@ -682,12 +695,11 @@ router.post("/:adminId/buildings/:buildingId/venues", async (req, res) => {
       where: { id: adminId },
     });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+    if (!admin) return res.status(403).json({ message: "Not admin" });
 
     const building = await prisma.building.findUnique({
       where: { id: buildingId },
-    })
+    });
 
     if (!building)
       return res.status(404).json({ message: "Building not found" });
@@ -702,58 +714,60 @@ router.post("/:adminId/buildings/:buildingId/venues", async (req, res) => {
         floorNumber,
         isAvailable,
         buildingId,
-      }
+      },
     });
 
-    return res.json({ 
-      message: "Venue Added!", 
-      venue 
+    return res.json({
+      message: "Venue Added!",
+      venue,
     });
-
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 });
 
 //Update a venue
-router.put("/:adminId/buildings/:buildingId/venues/:venueId", async (req, res) => {
-  try {
-    const { adminId, buildingId, venueId } = req.params;
-    const { 
-      name,
-      description,
-      type,
-      capacityAcademic,
-      capacityExamination,
-      floorNumber,
-      isAvailable,
-    } = req.body;
+router.put(
+  "/:adminId/buildings/:buildingId/venues/:venueId",
+  async (req, res) => {
+    try {
+      const { adminId, buildingId, venueId } = req.params;
+      const {
+        name,
+        description,
+        type,
+        capacityAcademic,
+        capacityExamination,
+        floorNumber,
+        isAvailable,
+      } = req.body;
 
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
+      const admin = await prisma.admin.findUnique({
+        where: { id: adminId },
+      });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+      if (!admin) return res.status(403).json({ message: "Not admin" });
 
-    const building = await prisma.building.findUnique({
-      where: { id: buildingId },
-    })
+      const building = await prisma.building.findUnique({
+        where: { id: buildingId },
+      });
 
-    if (!building)
-      return res.status(404).json({ message: "Building not found" });
+      if (!building)
+        return res.status(404).json({ message: "Building not found" });
 
-    const venue = await prisma.venue.findFirst({
+      const venue = await prisma.venue.findFirst({
         where: {
           id: venueId,
         },
-      })
+      });
 
       if (!venue)
-        return res.status(404).json({ message: "Venue not found in this building" })
+        return res
+          .status(404)
+          .json({ message: "Venue not found in this building" });
 
-    const updatedVenue = await prisma.venue.update({
-      where: { id: venueId },
+      const updatedVenue = await prisma.venue.update({
+        where: { id: venueId },
         data: {
           buildingId,
           name,
@@ -764,51 +778,54 @@ router.put("/:adminId/buildings/:buildingId/venues/:venueId", async (req, res) =
           floorNumber,
           isAvailable,
         },
-    });
+      });
 
-    return res.json({ 
-      message: "Venue Updated!", 
-      updatedVenue
-    });
-
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
+      return res.json({
+        message: "Venue Updated!",
+        updatedVenue,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+);
 
 //Delete a venue
-router.delete("/:adminId/buildings/:buildingId/venues/:venueId", async (req, res) => {
-  try {
-    const { adminId, buildingId, venueId } = req.params;
+router.delete(
+  "/:adminId/buildings/:buildingId/venues/:venueId",
+  async (req, res) => {
+    try {
+      const { adminId, buildingId, venueId } = req.params;
 
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
+      const admin = await prisma.admin.findUnique({
+        where: { id: adminId },
+      });
 
-    if (!admin) 
-      return res.status(403).json({ message: "Not admin" });
+      if (!admin) return res.status(403).json({ message: "Not admin" });
 
-    const venue = await prisma.venue.findFirst({
+      const venue = await prisma.venue.findFirst({
         where: {
           id: venueId,
           buildingId,
         },
-      })
+      });
 
       if (!venue)
-        return res.status(404).json({ message: "Venue not found in this building" })
+        return res
+          .status(404)
+          .json({ message: "Venue not found in this building" });
 
-    await prisma.venue.delete({
+      await prisma.venue.delete({
         where: { id: venueId },
-      })
+      });
 
-    return res.json({ 
-      message: "Venue Deleted!" 
-    });
-
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
+      return res.json({
+        message: "Venue Deleted!",
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+);
 
 export default router;
