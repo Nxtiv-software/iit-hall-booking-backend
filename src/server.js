@@ -7,7 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
-import bookingRoutes from "./routes/bookingRoutes.js"
+import bookingRoutes from "./routes/bookingRoutes.js";
 import requestRoutes from "./routes/requestRoutes.js";
 import roleRoutes from "./routes/roleRoutes.js";
 import statusRoutes from "./routes/statusRoutes.js";
@@ -34,7 +34,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 app.use(express.json());
 
@@ -54,8 +54,8 @@ app.use("/time-slots", authMiddleware, timeSlotRoutes);
 app.use("/logs", authMiddleware, logRoutes);
 app.use("/resources", authMiddleware, resourceRoutes);
 app.use("/venues", authMiddleware, venueRoutes);
-app.use("/departments", authMiddleware, departmentRoutes)
-app.use("/buildings", authMiddleware, buildingRoutes)
+app.use("/departments", authMiddleware, departmentRoutes);
+app.use("/buildings", authMiddleware, buildingRoutes);
 
 //Seeding data before starting the roles
 async function startServer() {

@@ -1,4 +1,4 @@
-import admin from "../Firebase/firebaseAdmin.js"; 
+import admin from "../Firebase/firebaseAdmin.js";
 import prisma from "../prismaClient.js";
 
 const authMiddleware = async (req, res, next) => {
