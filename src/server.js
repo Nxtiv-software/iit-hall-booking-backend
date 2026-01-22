@@ -17,10 +17,12 @@ import resourceRoutes from "./routes/resourceRoutes.js";
 import venueRoutes from "./routes/venueRoutes.js";
 import departmentRoutes from "./routes/departmentRoutes.js";
 import buildingRoutes from "./routes/buildingRoutes.js";
+import superAdminRoutes from "./routes/superAdminRoutes.js";
 
 //Middleware imports
 import authMiddleware from "./middleware/authMiddleware.js";
 import adminMiddleware from "./middleware/adminMiddleware.js";
+import { superAdminMiddleware } from "./middleware/superAdminMiddleware.js";
 
 import { seedDatabase } from "./seed/seed.js";
 
@@ -56,6 +58,7 @@ app.use("/resources", authMiddleware, resourceRoutes);
 app.use("/venues", authMiddleware, venueRoutes);
 app.use("/departments", authMiddleware, departmentRoutes)
 app.use("/buildings", authMiddleware, buildingRoutes)
+app.use("/super-admins", authMiddleware, superAdminMiddleware, superAdminRoutes);
 
 //Seeding data before starting the roles
 async function startServer() {
