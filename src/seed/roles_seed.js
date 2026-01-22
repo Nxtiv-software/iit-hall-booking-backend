@@ -1,5 +1,5 @@
 export const rolesSeed = [
     { name: "ADMIN" },
-    { name: "SUPER-ADMIN" },
+    { name: "SUPER_ADMIN" },
     { name: "STUDENT" },
 ]
