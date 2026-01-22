@@ -50,6 +50,7 @@ model User {
 
   // Relations
   admin   Admin?
+  superAdmin SuperAdmin?
   student Student?
 }
 
@@ -76,6 +77,20 @@ model Admin {
 
   bookings  Booking[]
   approvals Approval[]
+}
+
+/**
+ * ============================
+ * SUPER_ADMIN
+ * ============================
+ */
+model SuperAdmin {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /**

@@ -3,6 +3,108 @@ import prisma from "../prismaClient.js";
 
 const router = express.Router();
 
+// Create super admin profile
+router.post("/me", async (req, res) => {
+  try {
+    const { username, firstName, lastName, uniEmail, gender, phoneNum } = req.body;
+
+    const superAdminRole = await prisma.role.findUnique({
+      where: { name: "SUPER_ADMIN" },
+    });
+
+    if (!superAdminRole) {
+      return res.status(400).json({ message: "SUPER_ADMIN role not found. Please seed roles." });
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        username,
+        firstName,
+        lastName,
+        uniEmail,
+        gender,
+        phoneNum,
+        role: { connect: { id: superAdminRole.id } },
+      },
+    });
+
+    const superAdmin = await prisma.superAdmin.create({
+      data: {
+        userId: user.id,
+      },
+    });
+
+    return res.status(201).json({
+      message: "SuperAdmin created successfully",
+      user,
+      superAdmin,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Update super admin profile
+router.put("/me", async (req, res) => {
+  try {
+    const { firstName, lastName, gender, avatarUrl, phoneNum, uniEmail, username } = req.body;
+
+    const superAdminExist = await prisma.superAdmin.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!superAdminExist) {
+      return res.status(404).json({ message: "SuperAdmin profile not found" });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        username,
+        firstName,
+        lastName,
+        gender,
+        avatarUrl,
+        phoneNum,
+        uniEmail,
+      },
+    });
+
+    return res.json({
+      message: "SuperAdmin profile updated successfully",
+      user,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete superAdmin profile
+router.delete("/me", async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const superAdmin = await prisma.superAdmin.findUnique({
+      where: { userId },
+    });
+
+    if (!superAdmin) {
+      return res.status(404).json({ message: "SuperAdmin profile not found" });
+    }
+
+    await prisma.superAdmin.delete({
+      where: { userId },
+    });
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return res.json({ message: "SuperAdmin account deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 // Create admin profile
 router.post("/admins", async (req, res) => {
     const { 
