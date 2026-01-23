@@ -22,7 +22,7 @@ import superAdminRoutes from "./routes/superAdminRoutes.js";
 //Middleware imports
 import authMiddleware from "./middleware/authMiddleware.js";
 import adminMiddleware from "./middleware/adminMiddleware.js";
-import { superAdminMiddleware } from "./middleware/superAdminMiddleware.js";
+import superAdminMiddleware from "./middleware/superAdminMiddleware.js";
 
 import { seedDatabase } from "./seed/seed.js";
 
