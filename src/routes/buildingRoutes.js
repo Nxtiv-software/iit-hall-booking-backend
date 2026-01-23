@@ -20,14 +20,17 @@ router.get("/:buildingId/venues", async (req, res) => {
 
   try {
     const venues = await prisma.venue.findMany({
-      where: { buildingId },
+      where: { 
+        buildingId,
+        isAvailable: true
+       },
     });
 
     if (!venues) {
       return res.status(404).json({ message: "No venues found for this building" });
     }
 
-    return res.json({ buildingId, venues });
+    return res.json(venues);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
