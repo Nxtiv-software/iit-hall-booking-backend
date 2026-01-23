@@ -1,5 +1,6 @@
 import express from "express";
 import prisma from "../prismaClient.js";
+import admin from "../Firebase/firebaseAdmin.js";
 
 const router = express.Router();
 
@@ -134,16 +135,28 @@ router.put("/me", async (req, res) => {
 //Delete student profile
 router.delete("/me", async (req, res) => {
   try {
-    await prisma.student.delete({
-      where: { userId: req.user.id },
+    const userId = req.user.id;
+
+    const userRecord = await prisma.user.findUnique({
+      where: { id: userId },
     });
 
-    await prisma.user.delete({
-      where: { id: req.user.id },
-    });
+    if (!userRecord) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    try {
+      const firebaseUser = await admin.auth().getUserByEmail(userRecord.email);
+      await admin.auth().deleteUser(firebaseUser.uid);
+    } catch (firebaseError) {
+      console.warn("Firebase user not found or already deleted:", firebaseError.message);
+    }
+
+    await prisma.student.delete({ where: { userId } });
+    await prisma.user.delete({ where: { id: userId } });
 
     return res.json({
-      message: "Student profile and user account deleted successfully",
+      message: "Student profile, user account, and Firebase account deleted successfully",
     });
   } catch (error) {
     return res.status(503).json({ message: error.message });

@@ -84,20 +84,24 @@ router.delete("/me", async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const superAdmin = await prisma.superAdmin.findUnique({
-      where: { userId },
-    });
-
-    if (!superAdmin) {
-      return res.status(404).json({ message: "SuperAdmin profile not found" });
-    }
-
-    await prisma.superAdmin.delete({
-      where: { userId },
-    });
-    await prisma.user.delete({
+    const userRecord = await prisma.user.findUnique({
       where: { id: userId },
     });
+
+    if (!userRecord) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    try {
+      const firebaseUser = await admin.auth().getUserByEmail(userRecord.email);
+      await admin.auth().deleteUser(firebaseUser.uid);
+    } catch (firebaseError) {
+      console.warn("Firebase user not found or already deleted:", firebaseError.message);
+    }
+
+    await prisma.superAdmin.delete({ where: { userId } });
+    await prisma.user.delete({ where: { id: userId } });
+
 
     return res.json({ message: "SuperAdmin account deleted successfully" });
   } catch (error) {
@@ -192,22 +196,36 @@ router.delete("/admins/:adminId", async (req, res) => {
   const { adminId } = req.params;
 
   try {
-    const adminRecord = await prisma.admin.findUnique({ 
-        where: { id: adminId } 
+    const adminRecord = await prisma.admin.findUnique({
+      where: { id: adminId },
+      include: { user: true },
     });
 
-    if (!adminRecord) {
+    if (!adminRecord || !adminRecord.user) {
       return res.status(404).json({ message: "Admin not found" });
     }
 
-    const userId = adminRecord.userId;
+    const userId = adminRecord.user.id;
+    const email = adminRecord.user.uniEmail;
+
+    try {
+      const firebaseUser = await admin.auth().getUserByEmail(email);
+      await admin.auth().deleteUser(firebaseUser.uid);
+    } catch (firebaseError) {
+      console.warn(
+        "Firebase user not found or already deleted:",
+        firebaseError.message
+      );
+    }
 
     await prisma.admin.delete({ where: { id: adminId } });
     await prisma.user.delete({ where: { id: userId } });
 
-    res.json({ message: "Admin deleted successfully" });
+    return res.json({
+      message: "Admin profile, user account, and Firebase account deleted successfully",
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -298,20 +316,36 @@ router.delete("/students/:studentId", async (req, res) => {
   const { studentId } = req.params;
 
   try {
-    const studentRecord = await prisma.student.findUnique({ where: { id: studentId } });
+    const studentRecord = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: { user: true },
+    });
 
-    if (!studentRecord) {
+    if (!studentRecord || !studentRecord.user) {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    const userId = studentRecord.userId;
+    const userId = studentRecord.user.id;
+    const email = studentRecord.user.uniEmail;
+
+    try {
+      const firebaseUser = await admin.auth().getUserByEmail(email);
+      await admin.auth().deleteUser(firebaseUser.uid);
+    } catch (firebaseError) {
+      console.warn(
+        "Firebase user not found or already deleted:",
+        firebaseError.message
+      );
+    }
 
     await prisma.student.delete({ where: { id: studentId } });
     await prisma.user.delete({ where: { id: userId } });
 
-    res.json({ message: "Student deleted successfully" });
+    return res.json({
+      message: "Student profile, user account, and Firebase account deleted successfully",
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
