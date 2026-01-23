@@ -146,7 +146,7 @@ router.delete("/me", async (req, res) => {
     }
 
     try {
-      const firebaseUser = await admin.auth().getUserByEmail(userRecord.email);
+      const firebaseUser = await admin.auth().getUserByEmail(userRecord.uniEmail);
       await admin.auth().deleteUser(firebaseUser.uid);
     } catch (firebaseError) {
       console.warn("Firebase user not found or already deleted:", firebaseError.message);
