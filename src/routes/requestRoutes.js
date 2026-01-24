@@ -245,7 +245,12 @@ router.get("/:requestId/approvals", async (req, res) => {
     const approvals = await prisma.approval.findMany({
       where: { requestId },
       include: {
-        admin: { include: { user: true } },
+        status: true,
+        admin: { 
+          include: { 
+            user: true, 
+          } 
+        },
       },
     });
 

@@ -182,6 +182,7 @@ router.post("/requests", async (req, res) => {
       form5Data,
       venueId,
       requiredDate,
+      resourceIds,
     } = req.body;
 
     // Validate required fields
@@ -191,6 +192,10 @@ router.post("/requests", async (req, res) => {
 
     if (!requiredDate) {
       return res.status(400).json({ message: "requiredDate is required" });
+    }
+
+    if (!Array.isArray(resourceIds) || resourceIds.length === 0) {
+      return res.status(400).json({ message: "At least one resourceId is required" });
     }
 
     // Combine all form data
@@ -227,6 +232,11 @@ router.post("/requests", async (req, res) => {
         attendance,
         formData: formData,
         requiredDate: new Date(requiredDate),
+        resources: {
+          create: resourceIds.map(resourceId => ({
+            resourceId: resourceId
+          }))
+        },
       },
       include: {
         student: {
@@ -234,6 +244,9 @@ router.post("/requests", async (req, res) => {
         },
         venue: true,
         status: true,
+        resources: {
+          include: { resource: { include: { department: true } } },
+        },
       },
     });
 

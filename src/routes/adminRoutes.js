@@ -731,15 +731,23 @@ router.get("/:adminId/admin3/pending", async (req, res) => {
 
     const requests = await prisma.request.findMany({
         where: {
-            statusId: pending.id,
-            approvals: {
+          statusId: pending.id,
+          approvals: {
             none: { adminLevel: 3, statusId: pending.id },
-            some: [
-                { adminLevel: 1, statusId: approved.id },
-                { adminLevel: 2, statusId: approved.id },
-            ],
+          },
+          AND: [
+            {
+              approvals: {
+                some: { adminLevel: 1, statusId: approved.id },
+              },
             },
-            venue: { buildingId: admin.buildingId },
+            {
+              approvals: {
+                some: { adminLevel: 2, statusId: approved.id },
+              },
+            },
+          ],
+          venue: { buildingId: admin.buildingId },
         },
         include: { 
             student: { 
@@ -813,27 +821,44 @@ router.get("/:adminId/admin4/pending", async (req, res) => {
         where: {
             statusId: pending.id,
             approvals: {
-            none: { adminLevel: 4, statusId: pending.id },
-            some: [
-                { adminLevel: 1, statusId: approved.id },
-                { adminLevel: 2, statusId: approved.id },
-                { adminLevel: 3, statusId: approved.id },
-            ],
+              none: { adminLevel: 4, statusId: pending.id },
             },
-            venue: {
-            building: { 
-                admins: { 
-                    some: { departmentId: admin.departmentId } 
-                } 
+            AND: [
+            {
+              approvals: {
+                some: { adminLevel: 1, statusId: approved.id },
+              },
             },
+            {
+              approvals: {
+                some: { adminLevel: 2, statusId: approved.id },
+              },
             },
+            {
+              approvals: {
+                some: { adminLevel: 3, statusId: approved.id },
+              },
+            },
+          ],
+          resources: {
+            some: {
+              resource: { departmentId: admin.departmentId },
+            },
+          },
         },
         include: { 
-            student: { 
-                include: { user: true } 
-            }, 
-            venue: true, 
-            status: true 
+          student: { 
+              include: { user: true } 
+          }, 
+          venue: true, 
+          status: true,
+          resources: { 
+            include: { 
+              resource: { 
+                include: { department: true } 
+              } 
+            }
+          },
         },
     });
 
@@ -859,28 +884,25 @@ router.get("/:adminId/admin4/rejected", async (req, res) => {
 
     const requests = await prisma.request.findMany({
         where: {
-            approvals: { 
-                some: { 
-                    adminLevel: 4, 
-                    statusId: rejected.id 
-                } 
+          approvals: { 
+              some: { 
+                  adminLevel: 4, 
+                  statusId: rejected.id 
+              } 
+          },
+          resources: {
+            some: {
+              resource: { departmentId: admin.departmentId },
             },
-            venue: {
-            building: { 
-                admins: { 
-                    some: { 
-                        departmentId: admin.departmentId 
-                    } 
-                } 
-            },
-            },
+          },
         },
         include: { 
             student: { 
                 include: { user: true } 
             }, 
             venue: true, 
-            status: true 
+            status: true,
+            resources: { include: { resource: { include: { department: true } } } },
         },
     });
     return res.json(requests);
@@ -1000,7 +1022,9 @@ router.get("/:adminId/requests/:requestId", async (req, res) => {
         student: { 
           include: { user: true } 
         },
-        venue: true,
+        venue: {
+          include: { building: true },
+        },
         status: true,
         approvals: { 
           include: { 

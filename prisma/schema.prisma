@@ -168,17 +168,17 @@ model Building {
  * TIME_SLOT
  * ============================
  */
-model TimeSlot {
-  id        String   @id @default(uuid())
-  name      String
-  startTime DateTime
-  endTime   DateTime
+// model TimeSlot {
+//   id        String   @id @default(uuid())
+//   name      String
+//   startTime DateTime
+//   endTime   DateTime
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  requestSlots RequestTimeSlot[]
-}
+//   requestSlots RequestTimeSlot[]
+// }
 
 /**
  * ============================
@@ -225,7 +225,8 @@ model Request {
 
   bookings     Booking[]
   logs         Log[]
-  requestSlots RequestTimeSlot[]
+  // requestSlots RequestTimeSlot[]
+  resources RequestResource[]
   attachments  Attachment[]
   approvals    Approval[]
 }
@@ -284,6 +285,7 @@ model Resource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  requests RequestResource[]
   // venueResources VenueResource[]
 }
 
@@ -340,6 +342,20 @@ model Approval {
 
 /**
  * ============================
+ * REQUEST_RESOURCES (Join Table)
+ * ============================
+ */
+model RequestResource {
+  id         String   @id @default(uuid())
+  requestId  String
+  resourceId String     
+
+  request  Request  @relation(fields: [requestId], references: [id])
+  resource Resource @relation(fields: [resourceId], references: [id])
+}
+
+/**
+ * ============================
  * VENUE_RESOURCES (Join Table)
  * ============================
  */
@@ -362,16 +378,16 @@ model Approval {
  * REQUEST_TIME_SLOT (Join Table)
  * ============================
  */
-model RequestTimeSlot {
-  id         String @id @default(uuid())
-  requestId  String
-  timeSlotId String
+// model RequestTimeSlot {
+//   id         String @id @default(uuid())
+//   requestId  String
+//   timeSlotId String
 
-  request  Request  @relation(fields: [requestId], references: [id])
-  timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id])
+//   request  Request  @relation(fields: [requestId], references: [id])
+//   timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  @@unique([requestId, timeSlotId])
-}
+//   @@unique([requestId, timeSlotId])
+// }
