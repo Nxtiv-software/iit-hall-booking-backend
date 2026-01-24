@@ -228,249 +228,6 @@ router.get("/:adminId/bookings", async (req, res) => {
   }
 });
 
-//Get pending requests by admin level, building and department
-router.get("/:adminId/pending-requests", async (req, res) => {
-  try {
-    const { adminId } = req.params;
-
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!admin) return res.status(403).json({ message: "Not admin" });
-
-    const level = admin.adminLevel;
-
-    let filter = {};
-
-    if (level === 3) {
-      filter = {
-        venue: { buildingId: admin.buildingId },
-      };
-    }
-
-    if (level === 4) {
-      filter = {
-        departmentId: admin.departmentId,
-      };
-    }
-
-    const status = await prisma.status.findUnique({
-      where: { name: "PENDING" },
-    });
-
-    if (!status)
-      return res.status(500).json({ message: "Pending status not found" });
-
-    let approvalFilter = {};
-
-    if (level === 1) {
-      // Level 1 sees all pending requests
-      approvalFilter = {};
-    } else {
-      // Level 2, 3, 4: must have approvals from all previous levels
-      const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1); // e.g., level 3 → [1,2]
-      approvalFilter = {
-        every: {
-          OR: requiredLevels.map((l) => ({ adminLevel: l })),
-        },
-      };
-    }
-
-    const requests = await prisma.request.findMany({
-      where: {
-        statusId: status.id,
-        approvals: {
-          none: { adminLevel: level },
-          ...approvalFilter,
-        },
-        ...filter,
-      },
-      include: {
-        student: { include: { user: true } },
-        venue: true,
-        status: true,
-      },
-    });
-
-    return res.json(requests);
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
-
-// Get rejected requests for admin
-router.get("/:adminId/rejected-requests", async (req, res) => {
-  try {
-    const { adminId } = req.params;
-
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!admin) return res.status(403).json({ message: "Not admin" });
-
-    const level = admin.adminLevel;
-
-    let filter = {};
-
-    if (level === 3) {
-      filter = {
-        venue: { buildingId: admin.buildingId },
-      };
-    }
-
-    if (level === 4) {
-      filter = {
-        departmentId: admin.departmentId,
-      };
-    }
-
-    const status = await prisma.status.findUnique({
-      where: { name: "REJECTED" },
-    });
-
-    if (!status)
-      return res.status(500).json({ message: "Rejected status not found" });
-
-    // Hierarchical approval filter
-    let approvalFilter = {};
-
-    if (level === 1) {
-      // Level 1 sees all rejected requests
-      approvalFilter = {};
-    } else {
-      // Levels 2-4: must have approvals from all previous levels
-      const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1);
-      approvalFilter = {
-        every: {
-          OR: requiredLevels.map((l) => ({ adminLevel: l })),
-        },
-      };
-    }
-
-    const requests = await prisma.request.findMany({
-      where: {
-        statusId: status.id,
-        approvals: approvalFilter,
-        ...filter,
-      },
-      include: {
-        student: { include: { user: true } },
-        venue: true,
-        status: true,
-      },
-    });
-
-    return res.json(requests);
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
-
-//Approve a request
-router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
-  try {
-    const { adminId, requestId } = req.params;
-    const { comment } = req.body;
-
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!admin) return res.status(403).json({ message: "Not admin" });
-
-    const status = await prisma.status.findUnique({
-      where: { name: "APPROVED" },
-    });
-
-    if (!status) return res.status(500).json({ message: "Status not found" });
-
-    // Create approval
-    const approval = await prisma.approval.create({
-      data: {
-        requestId,
-        adminId: admin.id,
-        adminLevel: admin.adminLevel,
-        statusId: status.id,
-        comment,
-      },
-    });
-
-    // Check how many approvals exist
-    const approvals = await prisma.approval.findMany({
-      where: { requestId },
-      orderBy: { adminLevel: "asc" },
-    });
-
-    const approvedLevels = approvals.map((a) => a.adminLevel);
-
-    const requiredLevels = [1, 2, 3, 4];
-
-    const isComplete = requiredLevels.every((l) => approvedLevels.includes(l));
-
-    if (isComplete) {
-      // Mark request as fully approved
-      await prisma.request.update({
-        where: { id: requestId },
-        data: { statusId: status.id },
-      });
-
-      // Create booking entry
-      await prisma.booking.create({
-        data: {
-          requestId,
-          adminId: admin.id,
-        },
-      });
-    }
-
-    return res.json({ message: "Approved", approval });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
-
-//Reject a request
-router.post("/:adminId/requests/:requestId/reject", async (req, res) => {
-  try {
-    const { adminId, requestId } = req.params;
-    const { comment } = req.body;
-
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!admin) return res.status(403).json({ message: "Not admin" });
-
-    const status = await prisma.status.findUnique({
-      where: { name: "REJECTED" },
-    });
-
-    if (!status) return res.status(500).json({ message: "Status not found" });
-
-    await prisma.approval.create({
-      data: {
-        requestId,
-        adminId: admin.id,
-        adminLevel: admin.adminLevel,
-        statusId: status.id,
-        comment,
-      },
-    });
-
-    // Update request status
-    await prisma.request.update({
-      where: { id: requestId },
-      data: { statusId: status.id },
-    });
-
-    return res.json({ message: "Request rejected" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
-
 // Update approval comment
 router.put("/:adminId/requests/:requestId/approval", async (req, res) => {
   try {
@@ -503,56 +260,27 @@ router.put("/:adminId/requests/:requestId/approval", async (req, res) => {
   }
 });
 
-// Get count of pending requests for a specific admin
+// Get count of pending requests for a specific admin level
 router.get("/:adminId/pending-count", async (req, res) => {
   try {
     const { adminId } = req.params;
 
-    // Fetch admin info
-    const admin = await prisma.admin.findUnique({
-      where: { id: adminId },
+    const admin = await prisma.admin.findUnique({ 
+      where: { id: adminId } 
     });
+    if (!admin) 
+      return res.status(404).json({ message: "Admin not found" });
 
-    if (!admin) {
-      return res.status(403).json({ message: "Admin not found" });
-    }
-
-    const level = admin.adminLevel;
-
-    // Determine scope filter
-    let filter = {};
-    if (level === 3) filter = { venue: { buildingId: admin.buildingId } };
-    if (level === 4) filter = { departmentId: admin.departmentId };
-
-    // Get PENDING status
-    const status = await prisma.status.findUnique({
-      where: { name: "PENDING" },
+    const pendingStatus = await prisma.status.findUnique({ 
+      where: { name: "PENDING" } 
     });
-
-    if (!status) {
+    if (!pendingStatus) 
       return res.status(500).json({ message: "Pending status not found" });
-    }
 
-    // Hierarchical approval filter
-    let approvalFilter = {};
-    if (level > 1) {
-      const requiredLevels = Array.from({ length: level - 1 }, (_, i) => i + 1);
-      approvalFilter = {
-        every: {
-          OR: requiredLevels.map((l) => ({ adminLevel: l })),
-        },
-      };
-    }
-
-    // Count pending requests
     const pendingCount = await prisma.request.count({
       where: {
-        statusId: status.id,
-        approvals: {
-          none: { adminLevel: level }, // not yet approved by this admin
-          ...approvalFilter,
-        },
-        ...filter,
+        statusId: pendingStatus.id,
+        approvals: { none: { adminLevel: admin.adminLevel } },
       },
     });
 
@@ -840,5 +568,419 @@ router.delete(
     }
   },
 );
+
+// Get the pending requests of admin 1
+router.get("/:adminId/admin1/pending", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin || admin.adminLevel !== 1) 
+      return res.status(404).json({ message: "Admin1 not found" });
+
+    const pendingStatus = await prisma.status.findUnique({ where: { name: "PENDING" } });
+
+    const requests = await prisma.request.findMany({
+        where: {
+            statusId: pendingStatus.id,
+            approvals: { none: { adminLevel: 1, statusId: pendingStatus.id } },
+        },
+        include: { 
+            student: { 
+                include: { user: true } 
+            }, 
+            venue: true, 
+            status: true 
+        },
+    });
+
+    return res.json(requests);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Get admin1 rejected requests
+router.get("/:adminId/admin1/rejected", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin || admin.adminLevel !== 1)
+      return res.status(404).json({ message: "Admin1 not found" });
+
+    const rejectedStatus = await prisma.status.findUnique({ 
+        where: { name: "REJECTED" } 
+    });
+
+    const requests = await prisma.request.findMany({
+        where: {
+            approvals: { some: { adminLevel: 1, statusId: rejectedStatus.id } },
+        },
+        include: { 
+            student: { 
+                include: { user: true } 
+            }, 
+            venue: true, 
+            status: true 
+        },
+    });
+
+    return res.json(requests);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Get admin2 pending requests
+router.get("/:adminId/admin2/pending", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin || admin.adminLevel !== 2) 
+        return res.status(404).json({ message: "Admin2 not found" });
+
+    const pending = await prisma.status.findUnique({ where: { name: "PENDING" } });
+    const approved = await prisma.status.findUnique({ where: { name: "APPROVED" } });
+    if (!pending || !approved)
+        return res.status(500).json({ message: "Statuses not found" });
+
+    const requests = await prisma.request.findMany({
+        where: {
+            statusId: pending.id,
+            approvals: {
+            none: { adminLevel: 2, statusId: pending.id },
+            some: { adminLevel: 1, statusId: approved.id }, 
+            },
+        },
+        include: { 
+            student: { 
+                include: { user: true } 
+            }, 
+            venue: true, 
+            status: true 
+        },
+    });
+
+    return res.json(requests);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Get admin2 rejected requests
+router.get("/:adminId/admin2/rejected", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin || admin.adminLevel !== 2) 
+        return res.status(404).json({ message: "Admin2 not found" });
+
+    const rejected = await prisma.status.findUnique({ 
+        where: { name: "REJECTED" } 
+    });
+    if (!rejected) 
+        return res.status(500).json({ message: "Rejected status not found" });
+
+    const requests = await prisma.request.findMany({
+        where: { 
+            approvals: { 
+                some: { 
+                    adminLevel: 2, 
+                    statusId: rejected.id 
+                } 
+            } 
+        },
+        include: { 
+            student: { 
+                include: { user: true } 
+            }, 
+            venue: true, 
+            status: true 
+        },
+    });
+
+    return res.json(requests);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Get admin3 pending requests
+router.get("/:adminId/admin3/pending", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin || admin.adminLevel !== 3) 
+        return res.status(404).json({ message: "Admin3 not found" });
+
+    const pending = await prisma.status.findUnique({ where: { name: "PENDING" } });
+    const approved = await prisma.status.findUnique({ where: { name: "APPROVED" } });
+    if (!pending || !approved) 
+        return res.status(500).json({ message: "Statuses not found" });
+
+    const requests = await prisma.request.findMany({
+        where: {
+            statusId: pending.id,
+            approvals: {
+            none: { adminLevel: 3, statusId: pending.id },
+            some: [
+                { adminLevel: 1, statusId: approved.id },
+                { adminLevel: 2, statusId: approved.id },
+            ],
+            },
+            venue: { buildingId: admin.buildingId },
+        },
+        include: { 
+            student: { 
+                include: { user: true } 
+            }, 
+            venue: true, 
+            status: true 
+        },
+    });
+
+    return res.json(requests);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Get rejected requests of admin3
+router.get("/:adminId/admin3/rejected", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin || admin.adminLevel !== 3) 
+        return res.status(404).json({ message: "Admin3 not found" });
+
+    const rejected = await prisma.status.findUnique({ where: { name: "REJECTED" } });
+    if (!rejected) 
+        return res.status(500).json({ message: "Rejected status not found" });
+
+    const requests = await prisma.request.findMany({
+        where: {
+            approvals: { 
+                some: { 
+                    adminLevel: 3, 
+                    statusId: rejected.id 
+                } 
+            },
+            venue: { buildingId: admin.buildingId },
+        },
+        include: { 
+            student: { 
+                include: { user: true } 
+            }, 
+            venue: true, 
+            status: true 
+        },
+    });
+
+    return res.json(requests);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Get admin4 pending requests
+router.get("/:adminId/admin4/pending", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin || admin.adminLevel !== 4) 
+        return res.status(404).json({ message: "Admin4 not found" });
+
+    const pending = await prisma.status.findUnique({ where: { name: "PENDING" } });
+    const approved = await prisma.status.findUnique({ where: { name: "APPROVED" } });
+    if (!pending || !approved) return res.status(500).json({ message: "Statuses not found" });
+
+    const requests = await prisma.request.findMany({
+        where: {
+            statusId: pending.id,
+            approvals: {
+            none: { adminLevel: 4, statusId: pending.id },
+            some: [
+                { adminLevel: 1, statusId: approved.id },
+                { adminLevel: 2, statusId: approved.id },
+                { adminLevel: 3, statusId: approved.id },
+            ],
+            },
+            venue: {
+            building: { 
+                admins: { 
+                    some: { departmentId: admin.departmentId } 
+                } 
+            },
+            },
+        },
+        include: { 
+            student: { 
+                include: { user: true } 
+            }, 
+            venue: true, 
+            status: true 
+        },
+    });
+
+    return res.json(requests);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Get admin4 rejected requests
+router.get("/:adminId/admin4/rejected", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin || admin.adminLevel !== 4) 
+        return res.status(404).json({ message: "Admin4 not found" });
+
+    const rejected = await prisma.status.findUnique({ where: { name: "REJECTED" } });
+    if (!rejected) 
+        return res.status(500).json({ message: "Rejected status not found" });
+
+    const requests = await prisma.request.findMany({
+        where: {
+            approvals: { 
+                some: { 
+                    adminLevel: 4, 
+                    statusId: rejected.id 
+                } 
+            },
+            venue: {
+            building: { 
+                admins: { 
+                    some: { 
+                        departmentId: admin.departmentId 
+                    } 
+                } 
+            },
+            },
+        },
+        include: { 
+            student: { 
+                include: { user: true } 
+            }, 
+            venue: true, 
+            status: true 
+        },
+    });
+    return res.json(requests);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Approve a request for a specific admin level
+router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
+  try {
+    const { adminId, requestId } = req.params;
+    const { comment } = req.body;
+
+    const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+    if (!admin) 
+      return res.status(403).json({ message: "Admin not found" });
+
+    const approvedStatus = await prisma.status.findUnique({ where: { name: "APPROVED" } });
+    if (!approvedStatus) 
+      return res.status(500).json({ message: "Approved status not found" });
+
+    if (admin.adminLevel > 1) {
+      const prevLevelApproval = await prisma.approval.findFirst({
+        where: {
+          requestId,
+          adminLevel: admin.adminLevel - 1,
+          statusId: approvedStatus.id,
+        },
+      });
+      if (!prevLevelApproval)
+        return res.status(403).json({
+          message: `Approval from admin level ${admin.adminLevel - 1} is required first`,
+        });
+    }
+
+    // Create approval
+    const approval = await prisma.approval.create({
+      data: {
+        requestId,
+        adminId: admin.id,
+        adminLevel: admin.adminLevel,
+        statusId: approvedStatus.id,
+        comment,
+      },
+    });
+
+    if (admin.adminLevel === 4) {
+      await prisma.request.update({
+        where: { id: requestId },
+        data: { statusId: approvedStatus.id },
+      });
+
+      await prisma.booking.create({
+        data: { requestId, adminId: admin.id },
+      });
+    }
+
+    return res.json({ message: "Request approved successfully", approval });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Reject a request
+router.post("/:adminId/requests/:requestId/reject", async (req, res) => {
+  try {
+    const { adminId, requestId } = req.params;
+    const { comment } = req.body;
+
+    const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+    if (!admin) 
+      return res.status(403).json({ message: "Admin not found" });
+
+    const rejectedStatus = await prisma.status.findUnique({ 
+      where: { name: "REJECTED" } 
+    });
+    if (!rejectedStatus) 
+      return res.status(500).json({ message: "Rejected status not found" });
+
+    // Create rejection approval
+    const approval = await prisma.approval.create({
+      data: {
+        requestId,
+        adminId: admin.id,
+        adminLevel: admin.adminLevel,
+        statusId: rejectedStatus.id,
+        comment,
+      },
+    });
+
+    await prisma.request.update({
+      where: { id: requestId },
+      data: { statusId: rejectedStatus.id },
+    });
+
+    return res.json({ message: "Request rejected successfully", approval });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
 
 export default router;
