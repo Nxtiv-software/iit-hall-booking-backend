@@ -983,4 +983,44 @@ router.post("/:adminId/requests/:requestId/reject", async (req, res) => {
   }
 });
 
+// Get a request by ID 
+router.get("/:adminId/requests/:requestId", async (req, res) => {
+  try {
+    const { adminId, requestId } = req.params;
+
+    const admin = await prisma.admin.findUnique({ 
+      where: { id: adminId } 
+    });
+    if (!admin) 
+      return res.status(404).json({ message: "Admin not found" });
+
+    const request = await prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        student: { 
+          include: { user: true } 
+        },
+        venue: true,
+        status: true,
+        approvals: { 
+          include: { 
+            admin: { 
+              include: { user: true } 
+            } 
+          } 
+        },
+        bookings: true,
+      },
+    });
+
+    if (!request) 
+      return res.status(404).json({ message: "Request not found" });
+
+    return res.json({ request });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
 export default router;
