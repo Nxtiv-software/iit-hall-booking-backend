@@ -917,29 +917,36 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
     const { adminId, requestId } = req.params;
     const { comment } = req.body;
 
-    const admin = await prisma.admin.findUnique({ where: { id: adminId } });
-    if (!admin) 
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+    if (!admin) {
       return res.status(403).json({ message: "Admin not found" });
+    }
 
-    const approvedStatus = await prisma.status.findUnique({ where: { name: "APPROVED" } });
-    if (!approvedStatus) 
+    const approvedStatus = await prisma.status.findUnique({
+      where: { name: "APPROVED" },
+    });
+    if (!approvedStatus) {
       return res.status(500).json({ message: "Approved status not found" });
+    }
 
     if (admin.adminLevel > 1) {
-      const prevLevelApproval = await prisma.approval.findFirst({
+      const prevApproval = await prisma.approval.findFirst({
         where: {
           requestId,
           adminLevel: admin.adminLevel - 1,
           statusId: approvedStatus.id,
         },
       });
-      if (!prevLevelApproval)
+
+      if (!prevApproval) {
         return res.status(403).json({
           message: `Approval from admin level ${admin.adminLevel - 1} is required first`,
         });
+      }
     }
 
-    // Create approval
     const approval = await prisma.approval.create({
       data: {
         requestId,
@@ -950,24 +957,107 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
       },
     });
 
-    const request = await prisma.request.findUnique({ where: { id: requestId } });
+    const request = await prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        resources: {
+          include: {
+            resource: true,
+          },
+        },
+      },
+    });
 
-    const resourceIds = request?.formData?.form4?.resourceIds || [];
-    const shouldCreateBooking =
-      admin.adminLevel === 4 || (admin.adminLevel === 3 && resourceIds.length === 0);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
 
-    if (shouldCreateBooking) {
+    const resourceDepartments = [
+      ...new Set(
+        request.resources
+          .map(r => r.resource?.departmentId)
+          .filter(Boolean)
+      ),
+    ];
+
+    // CASE 1: ADMIN 3 — NO RESOURCES → CREATE BOOKING
+    if (admin.adminLevel === 3 && resourceDepartments.length === 0) {
       await prisma.request.update({
         where: { id: requestId },
         data: { statusId: approvedStatus.id },
       });
 
       await prisma.booking.create({
-        data: { requestId, adminId: admin.id },
+        data: {
+          requestId,
+          adminId: admin.id,
+        },
+      });
+
+      return res.json({
+        message: "Request approved and booking created (no resources required)",
+        approval,
       });
     }
 
-    return res.json({ message: "Request approved successfully", approval });
+    // CASE 2: ADMIN 4 — CHECK DEPARTMENT APPROVALS
+    if (admin.adminLevel === 4) {
+      const requiredDepartments = resourceDepartments;
+
+      const approvedAdmin4s = await prisma.approval.findMany({
+        where: {
+          requestId,
+          adminLevel: 4,
+          statusId: approvedStatus.id,
+        },
+        include: {
+          admin: true,
+        },
+      });
+
+      const approvedDepartments = [
+        ...new Set(
+          approvedAdmin4s
+            .map(a => a.admin.departmentId)
+            .filter(Boolean)
+        ),
+      ];
+
+      const allDepartmentsApproved = requiredDepartments.every(depId =>
+        approvedDepartments.includes(depId),
+      );
+
+      // Only create booking when ALL departments approved
+      if (allDepartmentsApproved) {
+        await prisma.request.update({
+          where: { id: requestId },
+          data: { statusId: approvedStatus.id },
+        });
+
+        await prisma.booking.create({
+          data: {
+            requestId,
+            adminId: admin.id,
+          },
+        });
+
+        return res.json({
+          message: "All department approvals completed. Booking created.",
+          approval,
+        });
+      }
+
+      return res.json({
+        message: "Approval recorded. Waiting for other department approvals.",
+        approval,
+      });
+    }
+
+    // DEFAULT: JUST APPROVAL (Admin1 / Admin2)
+    return res.json({
+      message: "Approval recorded successfully",
+      approval,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
