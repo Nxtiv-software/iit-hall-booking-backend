@@ -950,7 +950,13 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
       },
     });
 
-    if (admin.adminLevel === 4) {
+    const request = await prisma.request.findUnique({ where: { id: requestId } });
+
+    const resourceIds = request?.formData?.form4?.resourceIds || [];
+    const shouldCreateBooking =
+      admin.adminLevel === 4 || (admin.adminLevel === 3 && resourceIds.length === 0);
+
+    if (shouldCreateBooking) {
       await prisma.request.update({
         where: { id: requestId },
         data: { statusId: approvedStatus.id },
