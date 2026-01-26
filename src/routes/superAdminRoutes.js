@@ -4,504 +4,261 @@ import admin from "../Firebase/firebaseAdmin.js";
 
 const router = express.Router();
 
-// Creating a SuperAdmin account
-router.post("/:superAdminId/register", async (req, res) => {
-  const { superAdminId } = req.params;
-
-  const {
-    email,
-    password,
-    username,
-    firstName,
-    lastName,
-    gender,
-    phoneNum,
-  } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({
-      message: "email and password are required",
-    });
+// Create superadmin profile
+router.post("/", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
   }
 
+  const { email, password, username, firstName, lastName, gender, phoneNum } = req.body;
+  let firebaseUser;
+
   try {
-    const requestingSuperAdmin = await prisma.superAdmin.findUnique({
-      where: { id: superAdminId },
-      include: {
-        user: {
-          include: {
-            role: true,
-          },
-        },
-      },
-    });
+    const role = await prisma.role.findUnique({ where: { name: "SUPER_ADMIN" } });
 
-    if (!requestingSuperAdmin || requestingSuperAdmin.user.role.name !== "SUPER_ADMIN") {
-      return res.status(403).json({
-        message: "Access denied. Only SuperAdmins can create accounts.",
-      });
-    }
-
-    const firebaseUser = await admin.auth().createUser({ email, password });
-
-    const superAdminRole = await prisma.role.findUnique({
-      where: { name: "SUPER_ADMIN" },
-    });
-
-    if (!superAdminRole) {
-      await admin.auth().deleteUser(firebaseUser.uid);
-      return res.status(400).json({
-        message: "SUPER_ADMIN role not found. Please seed roles.",
-      });
-    }
-
-    let finalUsername = username;
-    let counter = 1;
-
-    while (
-      await prisma.user.findUnique({ where: { username: finalUsername } })
-    ) {
-      finalUsername = `${username}${counter++}`;
-    }
+    firebaseUser = await admin.auth().createUser({ email, password });
 
     const user = await prisma.user.create({
-      data: {
-        username: finalUsername,
-        firstName,
-        lastName,
-        uniEmail: email,
-        gender,
-        phoneNum,
-        roleId: superAdminRole.id,
-      },
-    });
-
-
-    const superAdmin = await prisma.superAdmin.create({
-      data: {
-        userId: user.id,
-      },
-    });
-
-    return res.status(201).json({
-      message: "SuperAdmin created successfully",
-      firebaseUid: firebaseUser.uid,
-      user,
-      superAdmin,
-    });
-  } catch (error) {
-    console.error(error);
-    if (firebaseUser?.uid) {
-      await admin.auth().deleteUser(firebaseUser.uid);
-    }
-
-    return res.status(500).json({
-      message: "Failed to create SuperAdmin",
-      error: error.message,
-    });
-  }
-});
-
-// Update super admin profile
-router.put("/me", async (req, res) => {
-  try {
-    const { firstName, lastName, gender, avatarUrl, phoneNum, uniEmail, username } = req.body;
-
-    const superAdminExist = await prisma.superAdmin.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!superAdminExist) {
-      return res.status(404).json({ message: "SuperAdmin profile not found" });
-    }
-
-    const user = await prisma.user.update({
-      where: { id: req.user.id },
       data: {
         username,
         firstName,
         lastName,
+        uniEmail: email,
         gender,
-        avatarUrl,
         phoneNum,
-        uniEmail,
+        roleId: role.id,
       },
     });
 
-    return res.json({
-      message: "SuperAdmin profile updated successfully",
-      user,
+    const superAdmin = await prisma.superAdmin.create({
+      data: { userId: user.id },
     });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+
+    res.status(201).json({ user, superAdmin });
+  } catch (err) {
+    if (firebaseUser?.uid) await admin.auth().deleteUser(firebaseUser.uid);
+    res.status(500).json({ message: err.message });
   }
 });
 
-// Delete superAdmin profile
-router.delete("/me", async (req, res) => {
-  try {
-    const userId = req.user.id;
+// Update superadmin profile
+router.put("/:superAdminId", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
+  }
 
-    const userRecord = await prisma.user.findUnique({
-      where: { id: userId },
+  const { superAdminId } = req.params;
+
+  try {
+    const sa = await prisma.superAdmin.findUnique({ where: { id } });
+    if (!sa) return res.status(404).json({ message: "SuperAdmin not found" });
+
+    const user = await prisma.user.update({
+      where: { id: sa.userId },
+      data: req.body,
     });
 
-    if (!userRecord) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Delete supreadmin profile
+router.delete("/:superAdminId", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
+  }
+
+  const { superAdminId } = req.params;
+
+  try {
+    const sa = await prisma.superAdmin.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!sa) return res.status(404).json({ message: "SuperAdmin not found" });
 
     try {
-      const firebaseUser = await admin.auth().getUserByEmail(userRecord.email);
-      await admin.auth().deleteUser(firebaseUser.uid);
-    } catch (firebaseError) {
-      console.warn("Firebase user not found or already deleted:", firebaseError.message);
-    }
+      const fb = await admin.auth().getUserByEmail(sa.user.uniEmail);
+      await admin.auth().deleteUser(fb.uid);
+    } catch {}
 
-    await prisma.superAdmin.delete({ where: { userId } });
-    await prisma.user.delete({ where: { id: userId } });
+    await prisma.superAdmin.delete({ where: { id } });
+    await prisma.user.delete({ where: { id: sa.userId } });
 
-
-    return res.json({ message: "SuperAdmin account deleted successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.json({ message: "SuperAdmin deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
 // Create admin profile
-router.post("/:superAdminId/admins/register", async (req, res) => {
-  const { superAdminId } = req.params;
-
-  const {
-    email,
-    password,
-    username,
-    firstName,
-    lastName,
-    gender,
-    phoneNum,
-    adminLevel,
-    departmentId,
-    buildingId,
-  } = req.body;
-
-  if (!email || !password || adminLevel == null) {
-    return res.status(400).json({
-      message: "email, password, username and adminLevel are required",
-    });
+router.post("/:superAdminId/admins", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
   }
 
+  const { email, password, username, adminLevel, departmentId, buildingId } = req.body;
   let firebaseUser;
 
   try {
-    const requestingSuperAdmin = await prisma.superAdmin.findUnique({
-      where: { id: superAdminId },
-      include: {
-        user: { include: { role: true } },
-      },
-    });
-
-    if (!requestingSuperAdmin || requestingSuperAdmin.user.role.name !== "SUPER_ADMIN") {
-      return res.status(403).json({
-        message: "Access denied. Only SuperAdmins can create Admin accounts.",
-      });
-    }
+    const role = await prisma.role.findUnique({ where: { name: "ADMIN" } });
 
     firebaseUser = await admin.auth().createUser({ email, password });
 
-    const adminRole = await prisma.role.findUnique({
-      where: { name: "ADMIN" },
-    });
-
-    if (!adminRole) {
-      await admin.auth().deleteUser(firebaseUser.uid);
-      return res.status(500).json({ message: "ADMIN role not found" });
-    }
-
-    let finalUsername = username;
-    let counter = 1;
-
-    while (await prisma.user.findUnique({ where: { username: finalUsername } })) {
-      finalUsername = `${username}${counter++}`;
-    }
-
     const user = await prisma.user.create({
-      data: {
-        username: finalUsername,
-        firstName,
-        lastName,
-        uniEmail: email,
-        gender,
-        phoneNum,
-        roleId: adminRole.id,
-      },
+      data: { username, uniEmail: email, roleId: role.id },
     });
 
     const adminProfile = await prisma.admin.create({
-      data: {
-        userId: user.id,
-        adminLevel,
-        departmentId,
-        buildingId,
-      },
+      data: { userId: user.id, adminLevel, departmentId, buildingId },
     });
 
-    return res.status(201).json({
-      message: "Admin created successfully",
-      firebaseUid: firebaseUser.uid,
-      user,
-      admin: adminProfile,
-    });
-  } catch (error) {
-    console.error(error);
-
-    if (firebaseUser?.uid) {
-      await admin.auth().deleteUser(firebaseUser.uid);
-    }
-
-    return res.status(500).json({
-      message: "Failed to create Admin",
-      error: error.message,
-    });
+    res.status(201).json({ user, admin: adminProfile });
+  } catch (err) {
+    if (firebaseUser?.uid) await admin.auth().deleteUser(firebaseUser.uid);
+    res.status(500).json({ message: err.message });
   }
 });
 
-
 // Update admin profile
-router.put("/admins/:adminId", async (req, res) => {
+router.put("/:superAdminId/admins/:adminId", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
+  }
+
   const { adminId } = req.params;
-  const { username, firstName, lastName, uniEmail, gender, phoneNum, adminLevel, departmentId, buildingId } = req.body;
 
   try {
-    const adminRecord = await prisma.admin.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!adminRecord) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-
-    const userId = adminRecord.userId;
+    const adminRec = await prisma.admin.findUnique({ where: { id: adminId } });
+    if (!adminRec) return res.status(404).json({ message: "Admin not found" });
 
     const user = await prisma.user.update({
-      where: { id: userId },
-      data: { username, firstName, lastName, uniEmail, gender, phoneNum },
+      where: { id: adminRec.userId },
+      data: req.body,
     });
 
     const admin = await prisma.admin.update({
       where: { id: adminId },
-      data: { adminLevel, departmentId, buildingId },
+      data: req.body,
     });
 
     res.json({ user, admin });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
 // Delete admin profile
-router.delete("/admins/:adminId", async (req, res) => {
+router.delete("/:superAdminId/admins/:adminId", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
+  }
+
   const { adminId } = req.params;
 
   try {
-    const adminRecord = await prisma.admin.findUnique({
+    const adminRec = await prisma.admin.findUnique({
       where: { id: adminId },
       include: { user: true },
     });
 
-    if (!adminRecord || !adminRecord.user) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-
-    const userId = adminRecord.user.id;
-    const email = adminRecord.user.uniEmail;
+    if (!adminRec) return res.status(404).json({ message: "Admin not found" });
 
     try {
-      const firebaseUser = await admin.auth().getUserByEmail(email);
-      await admin.auth().deleteUser(firebaseUser.uid);
-    } catch (firebaseError) {
-      console.warn(
-        "Firebase user not found or already deleted:",
-        firebaseError.message
-      );
-    }
+      const fb = await admin.auth().getUserByEmail(adminRec.user.uniEmail);
+      await admin.auth().deleteUser(fb.uid);
+    } catch {}
 
     await prisma.admin.delete({ where: { id: adminId } });
-    await prisma.user.delete({ where: { id: userId } });
+    await prisma.user.delete({ where: { id: adminRec.userId } });
 
-    return res.json({
-      message: "Admin profile, user account, and Firebase account deleted successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.json({ message: "Admin deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
 // Create student profile
-router.post("/:superAdminId/students/register", async (req, res) => {
-  const { superAdminId } = req.params;
-
-  const {
-    email,
-    password,
-    username,
-    firstName,
-    lastName,
-    gender,
-    phoneNum,
-    iitIdNumber,
-    societyName,
-    societyPosition,
-  } = req.body;
-
-  if (!email || !password || !iitIdNumber) {
-    return res.status(400).json({
-      message: "email, password and iitIdNumber are required",
-    });
+router.post("/:superAdminId/students", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
   }
 
+  const { email, password, username, iitIdNumber, societyName, societyPosition } = req.body;
   let firebaseUser;
 
   try {
-    const requestingSuperAdmin = await prisma.superAdmin.findUnique({
-      where: { id: superAdminId },
-      include: {
-        user: { include: { role: true } },
-      },
-    });
-
-    if (!requestingSuperAdmin || requestingSuperAdmin.user.role.name !== "SUPER_ADMIN") {
-      return res.status(403).json({
-        message: "Access denied. Only SuperAdmins can create Student accounts.",
-      });
-    }
+    const role = await prisma.role.findUnique({ where: { name: "STUDENT" } });
 
     firebaseUser = await admin.auth().createUser({ email, password });
 
-    const studentRole = await prisma.role.findUnique({
-      where: { name: "STUDENT" },
-    });
-
-    if (!studentRole) {
-      await admin.auth().deleteUser(firebaseUser.uid);
-      return res.status(500).json({ message: "STUDENT role not found" });
-    }
-
-    let finalUsername = username;
-    let counter = 1;
-
-    while (await prisma.user.findUnique({ where: { username: finalUsername } })) {
-      finalUsername = `${username}${counter++}`;
-    }
-
     const user = await prisma.user.create({
-      data: {
-        username: finalUsername,
-        firstName,
-        lastName,
-        uniEmail: email,
-        gender,
-        phoneNum,
-        roleId: studentRole.id,
-      },
+      data: { username, uniEmail: email, roleId: role.id },
     });
 
     const student = await prisma.student.create({
-      data: {
-        userId: user.id,
-        iitIdNumber,
-        societyName,
-        societyPosition,
-      },
+      data: { userId: user.id, iitIdNumber, societyName, societyPosition },
     });
 
-    return res.status(201).json({
-      message: "Student created successfully",
-      firebaseUid: firebaseUser.uid,
-      user,
-      student,
-    });
-  } catch (error) {
-    console.error(error);
-
-    if (firebaseUser?.uid) {
-      await admin.auth().deleteUser(firebaseUser.uid);
-    }
-
-    return res.status(500).json({
-      message: "Failed to create Student",
-      error: error.message,
-    });
+    res.status(201).json({ user, student });
+  } catch (err) {
+    if (firebaseUser?.uid) await admin.auth().deleteUser(firebaseUser.uid);
+    res.status(500).json({ message: err.message });
   }
 });
 
 // Update student profile
-router.put("/students/:studentId", async (req, res) => {
+router.put("/:superAdminId/students/:studentId", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
+  }
+
   const { studentId } = req.params;
-  const { username, firstName, lastName, uniEmail, gender, phoneNum, iitIdNumber, societyName, societyPosition } = req.body;
 
   try {
-    const studentRecord = await prisma.student.findUnique({
-      where: { id: studentId },
-    });
-
-    if (!studentRecord) {
-      return res.status(404).json({ message: "Student not found" });
-    }
-
-    const userId = studentRecord.userId;
-
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: { username, firstName, lastName, uniEmail, gender, phoneNum },
-    });
-
     const student = await prisma.student.update({
       where: { id: studentId },
-      data: { iitIdNumber, societyName, societyPosition },
+      data: req.body,
     });
 
-    res.json({ user, student });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ student });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
 // Delete student profile
-router.delete("/students/:studentId", async (req, res) => {
+router.delete("/:superAdminId/students/:studentId", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
+  }
+
   const { studentId } = req.params;
 
   try {
-    const studentRecord = await prisma.student.findUnique({
+    const student = await prisma.student.findUnique({
       where: { id: studentId },
       include: { user: true },
     });
 
-    if (!studentRecord || !studentRecord.user) {
-      return res.status(404).json({ message: "Student not found" });
-    }
-
-    const userId = studentRecord.user.id;
-    const email = studentRecord.user.uniEmail;
+    if (!student) return res.status(404).json({ message: "Student not found" });
 
     try {
-      const firebaseUser = await admin.auth().getUserByEmail(email);
-      await admin.auth().deleteUser(firebaseUser.uid);
-    } catch (firebaseError) {
-      console.warn(
-        "Firebase user not found or already deleted:",
-        firebaseError.message
-      );
-    }
+      const fb = await admin.auth().getUserByEmail(student.user.uniEmail);
+      await admin.auth().deleteUser(fb.uid);
+    } catch {}
 
     await prisma.student.delete({ where: { id: studentId } });
-    await prisma.user.delete({ where: { id: userId } });
+    await prisma.user.delete({ where: { id: student.userId } });
 
-    return res.json({
-      message: "Student profile, user account, and Firebase account deleted successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.json({ message: "Student deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
+
 
 export default router;
