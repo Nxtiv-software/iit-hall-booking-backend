@@ -303,6 +303,115 @@ router.get("/:studentId/requests", async (req, res) => {
   }
 });
 
+//Get all pending requests by student id
+router.get("/:studentId/pending-requests", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const pendingStatus = await prisma.status.findUnique({
+      where: { name: "PENDING" }
+    })
+
+    if(!pendingStatus){
+      return res.status(404).json({ message: "Pending status not found" });
+    }
+
+    const requests = await prisma.request.findMany({
+      where: { 
+        studentId,
+        statusId: pendingStatus.id,
+      },
+      include: {
+        student: {
+          include: { user: true },
+        },
+        venue: true,
+        status: true,
+        attachments: true,
+        approvals: {
+          include: {
+            admin: {
+              include: { user: true },
+            },
+            status: true,
+          },
+        },
+        requestSlots: {
+          include: {
+            timeSlot: true,
+          },
+        },
+        bookings: {
+          include: {
+            admin: {
+              include: { user: true },
+            },
+          },
+        },
+      },
+    });
+
+    return res.json(requests);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+//Get all rejected requests by student id
+router.get("/:studentId/rejected-requests", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const rejectedStatus = await prisma.status.findUnique({
+      where: { name: "REJECTED" }
+    })
+
+    if(!rejectedStatus){
+      return res.status(404).json({ message: "Rejected status not found" });
+    }
+
+    const requests = await prisma.request.findMany({
+      where: { 
+        studentId,
+        statusId: rejectedStatus.id,
+      },
+      include: {
+        student: {
+          include: { user: true },
+        },
+        venue: true,
+        status: true,
+        attachments: true,
+        approvals: {
+          include: {
+            admin: {
+              include: { user: true },
+            },
+            status: true,
+          },
+        },
+        requestSlots: {
+          include: {
+            timeSlot: true,
+          },
+        },
+        bookings: {
+          include: {
+            admin: {
+              include: { user: true },
+            },
+          },
+        },
+      },
+    });
+
+    return res.json(requests);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
 //Get all bookings by student id
 router.get("/:studentId/bookings", async (req, res) => {
   try {
@@ -340,7 +449,7 @@ router.get("/:studentId/bookings", async (req, res) => {
   }
 });
 
-// Get the upcoming bookings for the following week
+// Get the upcoming bookings for the following week of a student
 router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
   try {
     const today = new Date();
@@ -354,6 +463,7 @@ router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
             gte: today,
             lte: nextWeek,
           },
+          studentId: studentId
         },
       },
       include: {
@@ -385,13 +495,50 @@ router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
   }
 });
 
-//Get total count of requests by student id
-router.get("/:studentId/requests/count", async (req, res) => {
+//Get total count of pending requests by student id
+router.get("/:studentId/pending-requests/count", async (req, res) => {
   try {
     const { studentId } = req.params;
 
+    const pendingStatus = await prisma.status.findUnique({
+      where: { name: "PENDING" }
+    });
+
+    if (!pendingStatus) {
+      return res.status(404).json({ message: "Pending status not found" });
+    }
+
     const count = await prisma.request.count({
-      where: { studentId: studentId },
+      where: { 
+        studentId: studentId,
+        statusId: pendingStatus.id, 
+      },
+    });
+
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+//Get total count of rejected requests by student id
+router.get("/:studentId/rejected-requests/count", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const rejectedStatus = await prisma.status.findUnique({
+      where: { name: "REJECTED" }
+    });
+
+    if (!rejectedStatus) {
+      return res.status(404).json({ message: "Rejected status not found" });
+    }
+
+    const count = await prisma.request.count({
+      where: { 
+        studentId: studentId,
+        statusId: rejectedStatus.id, 
+      },
     });
 
     res.json({ count });
@@ -411,28 +558,6 @@ router.get("/:studentId/bookings/count", async (req, res) => {
           studentId: studentId,
         },
       },
-    });
-
-    res.json({ count });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-//Get total count of pending requests by student id
-router.get("/:studentId/requests/pending/count", async (req, res) => {
-  try {
-    const pendingStatus = await prisma.status.findUnique({
-      where: { name: "Pending" },
-      select: { id: true },
-    });
-
-    if (!pendingStatus) {
-      return res.status(404).json({ message: "Pending status not found" });
-    }
-
-    const count = await prisma.request.count({
-      where: { statusId: pendingStatus.id },
     });
 
     res.json({ count });
