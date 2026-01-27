@@ -577,4 +577,45 @@ router.get("/count", async (req, res) => {
   }
 });
 
+// Get a request by student Id 
+router.get("/:studentId/requests/:requestId", async (req, res) => {
+  try {
+    const { studentId, requestId } = req.params;
+
+    const student = await prisma.student.findUnique({ 
+      where: { id: studentId } 
+    });
+    if (!student) 
+      return res.status(404).json({ message: "Student not found" });
+
+    const request = await prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        student: { 
+          include: { user: true } 
+        },
+        venue: {
+          include: { building: true },
+        },
+        status: true,
+        approvals: { 
+          include: { 
+            admin: { 
+              include: { user: true } 
+            } 
+          } 
+        },
+        bookings: true,
+      },
+    });
+
+    if (!request) 
+      return res.status(404).json({ message: "Request not found" });
+
+    return res.json({ request });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
