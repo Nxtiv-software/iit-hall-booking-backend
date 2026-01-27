@@ -4,17 +4,58 @@ import admin from "../Firebase/firebaseAdmin.js";
 
 const router = express.Router();
 
+// Get my super admin profile
+router.get("/me", async (req, res) => {
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ message: "SuperAdmin access only" });
+  }
+
+  try {
+    const superAdmin = await prisma.superAdmin.findUnique({
+      where: { userId: req.user.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            uniEmail: true,
+            gender: true,
+            phoneNum: true,
+            avatarUrl: true,
+            roleId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!superAdmin) {
+      return res.status(404).json({ message: "SuperAdmin profile not found" });
+    }
+
+    res.json(superAdmin);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Create superadmin profile
 router.post("/:superAdminId/others", async (req, res) => {
   if (req.user.role !== "SUPER_ADMIN") {
     return res.status(403).json({ message: "SuperAdmin access only" });
   }
 
-  const { email, password, username, firstName, lastName, gender, phoneNum } = req.body;
+  const { email, password, username, firstName, lastName, gender, phoneNum } =
+    req.body;
   let firebaseUser;
 
   try {
-    const role = await prisma.role.findUnique({ where: { name: "SUPER_ADMIN" } });
+    const role = await prisma.role.findUnique({
+      where: { name: "SUPER_ADMIN" },
+    });
 
     firebaseUser = await admin.auth().createUser({ email, password });
 
@@ -100,7 +141,8 @@ router.post("/:superAdminId/admins", async (req, res) => {
     return res.status(403).json({ message: "SuperAdmin access only" });
   }
 
-  const { email, password, username, adminLevel, departmentId, buildingId } = req.body;
+  const { email, password, username, adminLevel, departmentId, buildingId } =
+    req.body;
   let firebaseUser;
 
   try {
@@ -187,7 +229,14 @@ router.post("/:superAdminId/students", async (req, res) => {
     return res.status(403).json({ message: "SuperAdmin access only" });
   }
 
-  const { email, password, username, iitIdNumber, societyName, societyPosition } = req.body;
+  const {
+    email,
+    password,
+    username,
+    iitIdNumber,
+    societyName,
+    societyPosition,
+  } = req.body;
   let firebaseUser;
 
   try {
@@ -259,6 +308,5 @@ router.delete("/:superAdminId/students/:studentId", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
 
 export default router;
