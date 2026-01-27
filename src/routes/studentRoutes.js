@@ -304,7 +304,7 @@ router.get("/:studentId/requests", async (req, res) => {
 });
 
 //Get all pending requests by student id
-router.get("/:studentId/pending-requests", async (req, res) => {
+router.get("/:studentId/requests/pending", async (req, res) => {
   try {
     const { studentId } = req.params;
 
@@ -336,11 +336,6 @@ router.get("/:studentId/pending-requests", async (req, res) => {
             status: true,
           },
         },
-        requestSlots: {
-          include: {
-            timeSlot: true,
-          },
-        },
         bookings: {
           include: {
             admin: {
@@ -358,7 +353,7 @@ router.get("/:studentId/pending-requests", async (req, res) => {
 });
 
 //Get all rejected requests by student id
-router.get("/:studentId/rejected-requests", async (req, res) => {
+router.get("/:studentId/requests/rejected", async (req, res) => {
   try {
     const { studentId } = req.params;
 
@@ -388,11 +383,6 @@ router.get("/:studentId/rejected-requests", async (req, res) => {
               include: { user: true },
             },
             status: true,
-          },
-        },
-        requestSlots: {
-          include: {
-            timeSlot: true,
           },
         },
         bookings: {
@@ -496,7 +486,7 @@ router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
 });
 
 //Get total count of pending requests by student id
-router.get("/:studentId/pending-requests/count", async (req, res) => {
+router.get("/:studentId/requests/pending/count", async (req, res) => {
   try {
     const { studentId } = req.params;
 
@@ -522,7 +512,7 @@ router.get("/:studentId/pending-requests/count", async (req, res) => {
 });
 
 //Get total count of rejected requests by student id
-router.get("/:studentId/rejected-requests/count", async (req, res) => {
+router.get("/:studentId/requests/rejected/count", async (req, res) => {
   try {
     const { studentId } = req.params;
 
