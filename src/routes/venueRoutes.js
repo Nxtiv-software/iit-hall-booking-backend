@@ -16,4 +16,24 @@ router.get("/", async (req, res) => {
   }
 });
 
+//Get a specific venue
+router.get("/:venueId", async (req, res) => {
+  try {
+    const { venueId } = req.params;
+
+    const venue = await prisma.venue.findFirst({
+      where: { venueId },
+      include: { building: true },
+    });
+
+    if (!venue) {
+      return res.status(404).json({ message: "Venue not found" });
+    }
+
+    return res.json(venue);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
