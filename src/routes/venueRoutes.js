@@ -22,7 +22,7 @@ router.get("/:venueId", async (req, res) => {
     const { venueId } = req.params;
 
     const venue = await prisma.venue.findFirst({
-      where: { venueId },
+      where: { id: venueId },
       include: { building: true },
     });
 
