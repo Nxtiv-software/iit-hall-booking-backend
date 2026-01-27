@@ -36,59 +36,112 @@ router.post("/login", async (req, res) => {
 });
 
 // Register to website
-router.post("/register", async (req, res) => {
-  const { idToken, roleId } = req.body;
+// router.post("/register", async (req, res) => {
+//   const { idToken, roleId } = req.body;
 
-  if (!idToken || !roleId) {
-    return res
-      .status(400)
-      .json({ message: "ID token and roleId are required" });
-  }
+//   if (!idToken || !roleId) {
+//     return res
+//       .status(400)
+//       .json({ message: "ID token and roleId are required" });
+//   }
+
+//   try {
+//     const decodedToken = await admin.auth().verifyIdToken(idToken);
+//     const email = decodedToken.email;
+
+//     if (!email) return res.status(401).json({ message: "Invalid token" });
+
+//     const existingUser = await prisma.user.findUnique({
+//       where: { uniEmail: email },
+//     });
+//     if (existingUser)
+//       return res.status(409).json({ message: "User already exists" });
+
+//     const role = await prisma.role.findUnique({ where: { id: roleId } });
+//     if (!role) return res.status(400).json({ message: "Invalid roleId" });
+
+//     // Generate a unique username
+//     let baseUsername = email.split("@")[0];
+//     let username = baseUsername;
+//     let counter = 1;
+
+//     // Check if username exists and add a counter if needed
+//     while (await prisma.user.findUnique({ where: { username } })) {
+//       username = `${baseUsername}${counter}`;
+//       counter++;
+//     }
+
+//     const user = await prisma.user.create({
+//       data: {
+//         uniEmail: email,
+//         username,
+//         role: { connect: { id: roleId } },
+//       },
+//       select: {
+//         id: true,
+//         username: true,
+//         role: { select: { id: true, name: true } },
+//       },
+//     });
+
+//     res.json({ user, message: "User registered successfully" });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Error creating user" });
+//   }
+// });
+
+// Create superadmin profile
+router.post("/super-admins/register", async (req, res) => {
+  const { email, password, username, firstName, lastName, gender, phoneNum } = req.body;
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const email = decodedToken.email;
-
-    if (!email) return res.status(401).json({ message: "Invalid token" });
-
-    const existingUser = await prisma.user.findUnique({
-      where: { uniEmail: email },
+    const role = await prisma.role.findUnique({
+      where: { name: "SUPER_ADMIN" },
     });
-    if (existingUser)
-      return res.status(409).json({ message: "User already exists" });
 
-    const role = await prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) return res.status(400).json({ message: "Invalid roleId" });
+    let firebaseUser;
+    try {
+      firebaseUser = await admin.auth().getUserByEmail(email);
+    } catch (error) {
+      try {
+        firebaseUser = await admin.auth().createUser({ email, password });
+      } catch (firebaseError) {
+        if (firebaseError.code === "auth/email-already-exists") {
+          firebaseUser = await admin.auth().getUserByEmail(email);
+        } else {
+          throw firebaseError;
+        }
+      }
+    }
 
-    // Generate a unique username
-    let baseUsername = email.split("@")[0];
-    let username = baseUsername;
-    let counter = 1;
-
-    // Check if username exists and add a counter if needed
-    while (await prisma.user.findUnique({ where: { username } })) {
-      username = `${baseUsername}${counter}`;
-      counter++;
+    const existingUser = await prisma.user.findUnique({ where: { uniEmail: email } });
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists in database" });
     }
 
     const user = await prisma.user.create({
       data: {
-        uniEmail: email,
         username,
-        role: { connect: { id: roleId } },
-      },
-      select: {
-        id: true,
-        username: true,
-        role: { select: { id: true, name: true } },
+        firstName,
+        lastName,
+        uniEmail: email,
+        gender,
+        phoneNum,
+        roleId: role.id,
       },
     });
 
-    res.json({ user, message: "User registered successfully" });
+    const superAdmin = await prisma.superAdmin.create({
+      data: { userId: user.id },
+    });
+
+    res.status(201).json({ user, superAdmin });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Error creating user" });
+    res.status(500).json({ message: err.message });
   }
 });
+
 
 export default router;

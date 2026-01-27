@@ -5,7 +5,7 @@ import admin from "../Firebase/firebaseAdmin.js";
 const router = express.Router();
 
 // Create superadmin profile
-router.post("/", async (req, res) => {
+router.post("/:superAdminId/others", async (req, res) => {
   if (req.user.role !== "SUPER_ADMIN") {
     return res.status(403).json({ message: "SuperAdmin access only" });
   }
