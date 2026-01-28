@@ -25,6 +25,20 @@ router.get("/me", async (req, res) => {
         },
         createdAt: true,
         updatedAt: true,
+        admin: {
+          select: {
+            id: true,
+            adminLevel: true,
+            buildingId: true,
+            departmentId: true,
+          },
+        },
+
+        superAdmin: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
 

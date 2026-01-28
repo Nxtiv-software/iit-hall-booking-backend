@@ -7,7 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
-import bookingRoutes from "./routes/bookingRoutes.js"
+import bookingRoutes from "./routes/bookingRoutes.js";
 import requestRoutes from "./routes/requestRoutes.js";
 import roleRoutes from "./routes/roleRoutes.js";
 import statusRoutes from "./routes/statusRoutes.js";
@@ -17,10 +17,12 @@ import resourceRoutes from "./routes/resourceRoutes.js";
 import venueRoutes from "./routes/venueRoutes.js";
 import departmentRoutes from "./routes/departmentRoutes.js";
 import buildingRoutes from "./routes/buildingRoutes.js";
+import superAdminRoutes from "./routes/superAdminRoutes.js";
 
 //Middleware imports
 import authMiddleware from "./middleware/authMiddleware.js";
 import adminMiddleware from "./middleware/adminMiddleware.js";
+import superAdminMiddleware from "./middleware/superAdminMiddleware.js";
 
 import { seedDatabase } from "./seed/seed.js";
 
@@ -34,7 +36,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 app.use(express.json());
 
@@ -56,6 +58,7 @@ app.use("/resources", authMiddleware, resourceRoutes);
 app.use("/venues", authMiddleware, venueRoutes);
 app.use("/departments", authMiddleware, departmentRoutes)
 app.use("/buildings", authMiddleware, buildingRoutes)
+app.use("/super-admins", authMiddleware, superAdminMiddleware, superAdminRoutes);
 
 //Seeding data before starting the roles
 async function startServer() {

@@ -47,20 +47,20 @@ export async function seedDatabase() {
   // ----------------------------------------------------------
   // SEED TIME SLOTS  
   // ----------------------------------------------------------
-  const slotExists = await prisma.timeSlot.findFirst();
-  if (!slotExists) {
-    console.log("Seeding hourly time slots...");
+  // const slotExists = await prisma.timeSlot.findFirst();
+  // if (!slotExists) {
+  //   console.log("Seeding hourly time slots...");
 
-    const slots = generateTimeSlots("08:00", "18:00");
+  //   const slots = generateTimeSlots("08:00", "18:00");
 
-    await prisma.timeSlot.createMany({
-      data: slots,
-    });
+  //   await prisma.timeSlot.createMany({
+  //     data: slots,
+  //   });
 
-    console.log("Time slots seeded.");
-  } else {
-    console.log("Time slots already exist. Skipping time slots seeding.");
-  }
+  //   console.log("Time slots seeded.");
+  // } else {
+  //   console.log("Time slots already exist. Skipping time slots seeding.");
+  // }
 
   // ----------------------------------------------------------
   // SEED BUILDINGS
@@ -147,33 +147,33 @@ export async function seedDatabase() {
   console.log("All seeding complete!");
 }
 
-// Helper function to generate hourly time slots
-function generateTimeSlots(start, end) {
-  const slots = [];
+// // Helper function to generate hourly time slots
+// function generateTimeSlots(start, end) {
+//   const slots = [];
 
-  const [startHour, startMinute] = start.split(":").map(Number);
-  const [endHour, endMinute] = end.split(":").map(Number);
+//   const [startHour, startMinute] = start.split(":").map(Number);
+//   const [endHour, endMinute] = end.split(":").map(Number);
 
-  const today = new Date();
+//   const today = new Date();
 
-  let current = new Date(today);
-  current.setHours(startHour, startMinute, 0, 0);
+//   let current = new Date(today);
+//   current.setHours(startHour, startMinute, 0, 0);
 
-  const endTime = new Date(today);
-  endTime.setHours(endHour, endMinute, 0, 0);
+//   const endTime = new Date(today);
+//   endTime.setHours(endHour, endMinute, 0, 0);
 
-  while (current < endTime) {
-    let next = new Date(current);
-    next.setHours(current.getHours() + 1); // 1-hour increments
+//   while (current < endTime) {
+//     let next = new Date(current);
+//     next.setHours(current.getHours() + 1); // 1-hour increments
 
-    slots.push({
-      name: `${current.getHours()}:00 - ${next.getHours()}:00`,
-      startTime: new Date(current),
-      endTime: new Date(next),
-    });
+//     slots.push({
+//       name: `${current.getHours()}:00 - ${next.getHours()}:00`,
+//       startTime: new Date(current),
+//       endTime: new Date(next),
+//     });
 
-    current = next;
-  }
+//     current = next;
+//   }
 
-  return slots;
-}
+//   return slots;
+// }

@@ -1,5 +1,6 @@
 import express from "express";
 import prisma from "../prismaClient.js";
+import admin from "../Firebase/firebaseAdmin.js";
 
 const router = express.Router();
 
@@ -134,16 +135,28 @@ router.put("/me", async (req, res) => {
 //Delete student profile
 router.delete("/me", async (req, res) => {
   try {
-    await prisma.student.delete({
-      where: { userId: req.user.id },
+    const userId = req.user.id;
+
+    const userRecord = await prisma.user.findUnique({
+      where: { id: userId },
     });
 
-    await prisma.user.delete({
-      where: { id: req.user.id },
-    });
+    if (!userRecord) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    try {
+      const firebaseUser = await admin.auth().getUserByEmail(userRecord.uniEmail);
+      await admin.auth().deleteUser(firebaseUser.uid);
+    } catch (firebaseError) {
+      console.warn("Firebase user not found or already deleted:", firebaseError.message);
+    }
+
+    await prisma.student.delete({ where: { userId } });
+    await prisma.user.delete({ where: { id: userId } });
 
     return res.json({
-      message: "Student profile and user account deleted successfully",
+      message: "Student profile, user account, and Firebase account deleted successfully",
     });
   } catch (error) {
     return res.status(503).json({ message: error.message });
@@ -169,6 +182,7 @@ router.post("/requests", async (req, res) => {
       form5Data,
       venueId,
       requiredDate,
+      resourceIds,
     } = req.body;
 
     // Validate required fields
@@ -178,6 +192,10 @@ router.post("/requests", async (req, res) => {
 
     if (!requiredDate) {
       return res.status(400).json({ message: "requiredDate is required" });
+    }
+
+    if (!Array.isArray(resourceIds) || resourceIds.length === 0) {
+      return res.status(400).json({ message: "At least one resourceId is required" });
     }
 
     // Combine all form data
@@ -214,6 +232,11 @@ router.post("/requests", async (req, res) => {
         attendance,
         formData: formData,
         requiredDate: new Date(requiredDate),
+        resources: {
+          create: resourceIds.map(resourceId => ({
+            resourceId: resourceId
+          }))
+        },
       },
       include: {
         student: {
@@ -221,6 +244,9 @@ router.post("/requests", async (req, res) => {
         },
         venue: true,
         status: true,
+        resources: {
+          include: { resource: { include: { department: true } } },
+        },
       },
     });
 
@@ -277,6 +303,105 @@ router.get("/:studentId/requests", async (req, res) => {
   }
 });
 
+//Get all pending requests by student id
+router.get("/:studentId/requests/pending", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const pendingStatus = await prisma.status.findUnique({
+      where: { name: "PENDING" }
+    })
+
+    if(!pendingStatus){
+      return res.status(404).json({ message: "Pending status not found" });
+    }
+
+    const requests = await prisma.request.findMany({
+      where: { 
+        studentId,
+        statusId: pendingStatus.id,
+      },
+      include: {
+        student: {
+          include: { user: true },
+        },
+        venue: true,
+        status: true,
+        attachments: true,
+        approvals: {
+          include: {
+            admin: {
+              include: { user: true },
+            },
+            status: true,
+          },
+        },
+        bookings: {
+          include: {
+            admin: {
+              include: { user: true },
+            },
+          },
+        },
+      },
+    });
+
+    return res.json(requests);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+//Get all rejected requests by student id
+router.get("/:studentId/requests/rejected", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const rejectedStatus = await prisma.status.findUnique({
+      where: { name: "REJECTED" }
+    })
+
+    if(!rejectedStatus){
+      return res.status(404).json({ message: "Rejected status not found" });
+    }
+
+    const requests = await prisma.request.findMany({
+      where: { 
+        studentId,
+        statusId: rejectedStatus.id,
+      },
+      include: {
+        student: {
+          include: { user: true },
+        },
+        venue: true,
+        status: true,
+        attachments: true,
+        approvals: {
+          include: {
+            admin: {
+              include: { user: true },
+            },
+            status: true,
+          },
+        },
+        bookings: {
+          include: {
+            admin: {
+              include: { user: true },
+            },
+          },
+        },
+      },
+    });
+
+    return res.json(requests);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
 //Get all bookings by student id
 router.get("/:studentId/bookings", async (req, res) => {
   try {
@@ -314,7 +439,7 @@ router.get("/:studentId/bookings", async (req, res) => {
   }
 });
 
-// Get the upcoming bookings for the following week
+// Get the upcoming bookings for the following week of a student
 router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
   try {
     const today = new Date();
@@ -328,6 +453,7 @@ router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
             gte: today,
             lte: nextWeek,
           },
+          studentId: studentId
         },
       },
       include: {
@@ -359,13 +485,50 @@ router.get("/:studentId/bookings/upcoming-week", async (req, res) => {
   }
 });
 
-//Get total count of requests by student id
-router.get("/:studentId/requests/count", async (req, res) => {
+//Get total count of pending requests by student id
+router.get("/:studentId/requests/pending/count", async (req, res) => {
   try {
     const { studentId } = req.params;
 
+    const pendingStatus = await prisma.status.findUnique({
+      where: { name: "PENDING" }
+    });
+
+    if (!pendingStatus) {
+      return res.status(404).json({ message: "Pending status not found" });
+    }
+
     const count = await prisma.request.count({
-      where: { studentId: studentId },
+      where: { 
+        studentId: studentId,
+        statusId: pendingStatus.id, 
+      },
+    });
+
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+//Get total count of rejected requests by student id
+router.get("/:studentId/requests/rejected/count", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const rejectedStatus = await prisma.status.findUnique({
+      where: { name: "REJECTED" }
+    });
+
+    if (!rejectedStatus) {
+      return res.status(404).json({ message: "Rejected status not found" });
+    }
+
+    const count = await prisma.request.count({
+      where: { 
+        studentId: studentId,
+        statusId: rejectedStatus.id, 
+      },
     });
 
     res.json({ count });
@@ -393,34 +556,53 @@ router.get("/:studentId/bookings/count", async (req, res) => {
   }
 });
 
-//Get total count of pending requests by student id
-router.get("/:studentId/requests/pending/count", async (req, res) => {
-  try {
-    const pendingStatus = await prisma.status.findUnique({
-      where: { name: "Pending" },
-      select: { id: true },
-    });
-
-    if (!pendingStatus) {
-      return res.status(404).json({ message: "Pending status not found" });
-    }
-
-    const count = await prisma.request.count({
-      where: { statusId: pendingStatus.id },
-    });
-
-    res.json({ count });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
 // Get total student count
 router.get("/count", async (req, res) => {
   try {
     const totalStudents = await prisma.student.count();
 
     return res.json({ totalStudents });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Get a request by student Id 
+router.get("/:studentId/requests/:requestId", async (req, res) => {
+  try {
+    const { studentId, requestId } = req.params;
+
+    const student = await prisma.student.findUnique({ 
+      where: { id: studentId } 
+    });
+    if (!student) 
+      return res.status(404).json({ message: "Student not found" });
+
+    const request = await prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        student: { 
+          include: { user: true } 
+        },
+        venue: {
+          include: { building: true },
+        },
+        status: true,
+        approvals: { 
+          include: { 
+            admin: { 
+              include: { user: true } 
+            } 
+          } 
+        },
+        bookings: true,
+      },
+    });
+
+    if (!request) 
+      return res.status(404).json({ message: "Request not found" });
+
+    return res.json({ request });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

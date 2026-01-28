@@ -26,6 +26,78 @@ router.get("/", async (req, res) => {
   }
 });
 
+//Get a specific request by ID
+router.get("/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const request = await prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        student: {
+          include: {
+            user: true,
+          },
+        },
+        venue: {
+          include: {
+            building: true,
+          },
+        },
+        status: true,
+        requestSlots: {
+          include: {
+            timeSlot: true,
+          },
+        },
+        attachments: true,
+        approvals: {
+          include: {
+            admin: {
+              include: {
+                user: true,
+                building: true,
+                department: true,
+              },
+            },
+            status: true,
+          },
+          orderBy: {
+            adminLevel: "asc",
+          },
+        },
+        bookings: {
+          include: {
+            admin: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    // Add signed URLs for attachments if any
+    if (request.attachments && request.attachments.length > 0) {
+      request.attachments = await Promise.all(
+        request.attachments.map(async (att) => ({
+          ...att,
+          previewUrl: await getSignedUrlV3(att.fileName),
+        })),
+      );
+    }
+
+    return res.json(request);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 //Get all attachments by request id
 router.get("/:requestId/attachments", async (req, res) => {
   try {
@@ -50,7 +122,7 @@ router.get("/:requestId/attachments", async (req, res) => {
       attachments.map(async (att) => ({
         ...att,
         previewUrl: await getSignedUrlV3(att.fileName),
-      }))
+      })),
     );
 
     return res.json(attachmentsWithPreview);
@@ -92,7 +164,7 @@ router.post(
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
-  }
+  },
 );
 
 //Get an attachment by request id
@@ -151,7 +223,7 @@ router.delete("/:requestId/attachments/:attachmentId", async (req, res) => {
       new DeleteObjectCommand({
         Bucket: process.env.AWS_BUCKET_NAME,
         Key: exists.fileName,
-      })
+      }),
     );
 
     // Delete from db
@@ -173,7 +245,12 @@ router.get("/:requestId/approvals", async (req, res) => {
     const approvals = await prisma.approval.findMany({
       where: { requestId },
       include: {
-        admin: { include: { user: true } },
+        status: true,
+        admin: { 
+          include: { 
+            user: true, 
+          } 
+        },
       },
     });
 

@@ -18,4 +18,20 @@ router.get("/", async (req, res) => {
   }
 });
 
+//Get all available resources
+router.get("/available", async (req, res) => {
+  try {
+    const resources = await prisma.resource.findMany({
+      where: { isAvailable: true },
+      include: {
+        department: true,
+      }
+    });
+
+    return res.json(resources);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
