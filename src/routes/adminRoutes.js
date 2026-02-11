@@ -905,7 +905,7 @@ router.get("/:adminId/admin5/pending", async (req, res) => {
         where: { id: adminId } 
     });
     if (!admin || admin.adminLevel !== 5) 
-        return res.status(404).json({ message: "Admin6 not found" });
+        return res.status(404).json({ message: "Admin5 not found" });
 
     const pending = await prisma.status.findUnique({ where: { name: "PENDING" } });
     const approved = await prisma.status.findUnique({ where: { name: "APPROVED" } });

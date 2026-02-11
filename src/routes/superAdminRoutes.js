@@ -309,4 +309,33 @@ router.delete("/:superAdminId/students/:studentId", async (req, res) => {
   }
 });
 
+// Create superadmin profile
+router.post("/superAdmins", async (req, res) => {
+  const {
+    email,
+    password,
+    username,
+  } = req.body;
+  let firebaseUser;
+
+  try {
+    const role = await prisma.role.findUnique({ where: { name: "SUPER_ADMIN" } });
+
+    firebaseUser = await admin.auth().createUser({ email, password });
+
+    const user = await prisma.user.create({
+      data: { username, uniEmail: email, roleId: role.id },
+    });
+
+    const superadmin = await prisma.superAdmin.create({
+      data: { userId: user.id },
+    });
+
+    res.status(201).json({ user, superadmin });
+  } catch (err) {
+    if (firebaseUser?.uid) await admin.auth().deleteUser(firebaseUser.uid);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;
