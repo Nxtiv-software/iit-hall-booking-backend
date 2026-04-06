@@ -569,6 +569,26 @@ router.delete(
   },
 );
 
+// Get all Admin Level 1 users
+router.get("/admin1/all", async (req, res) => {
+  try {
+    const admins = await prisma.admin.findMany({
+      where: {
+        adminLevel: 1,
+      },
+      include: {
+        user: true,
+        building: true,
+        department: true,
+      },
+    });
+
+    return res.json(admins);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 // Get the pending requests of admin 1
 router.get("/:adminId/admin1/pending", async (req, res) => {
   try {
