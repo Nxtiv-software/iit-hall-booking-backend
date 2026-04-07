@@ -224,9 +224,15 @@ router.post("/requests", async (req, res) => {
 
     const newRequest = await prisma.request.create({
       data: {
-        studentId: student.id,
-        venueId,
-        statusId: status.id,
+        student: {
+          connect: { id: student.id },
+        },
+        venue: {
+          connect: { id: venueId },
+        },
+        status: {
+          connect: { id: status.id },
+        },
         title,
         description,
         attendance,
