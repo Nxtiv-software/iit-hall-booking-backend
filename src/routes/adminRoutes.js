@@ -570,8 +570,16 @@ router.delete(
 );
 
 // Get all Admin Level 1 users
-router.get("/admin1/all", async (req, res) => {
+router.get("/:adminId/admin1/all", async (req, res) => {
   try {
+    const { adminId } = req.params;
+
+    const admin = await prisma.admin.findUnique({ 
+        where: { id: adminId } 
+    });
+    if (!admin) 
+      return res.status(404).json({ message: "Admin not found" });
+
     const admins = await prisma.admin.findMany({
       where: {
         adminLevel: 1,
@@ -1138,7 +1146,7 @@ router.get("/:adminId/admin6/rejected", async (req, res) => {
 router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
   try {
     const { adminId, requestId } = req.params;
-    const { comment } = req.body;
+    const { comment, lecturerAdminId } = req.body;
 
     const admin = await prisma.admin.findUnique({
       where: { id: adminId },
@@ -1179,6 +1187,14 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
         comment,
       },
     });
+
+    // Update lecturerAdminId if this is admin level 1
+    if (admin.adminLevel === 1 && lecturerAdminId) {
+      await prisma.request.update({
+        where: { id: requestId },
+        data: { lecturerAdminId },
+      });
+    }
 
     const request = await prisma.request.findUnique({
       where: { id: requestId },
