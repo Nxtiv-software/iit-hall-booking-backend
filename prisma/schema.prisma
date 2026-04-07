@@ -77,6 +77,7 @@ model Admin {
 
   bookings  Booking[]
   approvals Approval[]
+  requests Request[]
 }
 
 /**
@@ -209,10 +210,12 @@ model Request {
   studentId String
   venueId   String
   statusId  String
+  lecturerAdminId String 
 
   student Student @relation(fields: [studentId], references: [id])
   venue   Venue   @relation(fields: [venueId], references: [id])
   status  Status  @relation(fields: [statusId], references: [id])
+  lecturerAdmin  Admin  @relation(fields: [lecturerAdminId], references: [id])
 
   formData     Json?
   title        String?
