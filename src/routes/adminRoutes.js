@@ -1,6 +1,8 @@
 import express from "express";
 import prisma from "../prismaClient.js";
 import admin from "../Firebase/firebaseAdmin.js";
+import emailService from "../utils/emailService.js";
+
 
 const router = express.Router();
 
@@ -1199,6 +1201,11 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
     const request = await prisma.request.findUnique({
       where: { id: requestId },
       include: {
+        student: {
+          include: {
+            user: true,
+          },
+        },
         resources: {
           include: {
             resource: true,
@@ -1232,6 +1239,17 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
           adminId: admin.id,
         },
       });
+
+      // Send final approval email
+      if (request?.student?.user?.uniEmail) {
+        await emailService.sendApprovalEmail(
+          request.student.user.uniEmail,
+          request.student.user.firstName || request.student.user.username || "Student",
+          request.title || "Hall Booking Request",
+          "Fully Approved and Booking Created",
+          comment
+        ).catch(err => console.error("Email error:", err));
+      }
 
       return res.json({
         message: "Request approved and booking created (no resources required)",
@@ -1280,16 +1298,49 @@ router.post("/:adminId/requests/:requestId/approve", async (req, res) => {
           },
         });
 
+        // Send final approval email
+        if (request?.student?.user?.uniEmail) {
+          await emailService.sendApprovalEmail(
+            request.student.user.uniEmail,
+            request.student.user.firstName || request.student.user.username || "Student",
+            request.title || "Hall Booking Request",
+            "Fully Approved and Booking Created (All Departments Approved)",
+            comment
+          ).catch(err => console.error("Email error:", err));
+        }
+
         return res.json({
           message: "All department approvals completed. Booking created.",
           approval,
         });
       }
 
+      // Send partial approval email for Admin 6
+      if (request?.student?.user?.uniEmail) {
+        await emailService.sendApprovalEmail(
+          request.student.user.uniEmail,
+          request.student.user.firstName || request.student.user.username || "Student",
+          request.title || "Hall Booking Request",
+          `Department Approval Received (Level 6: ${admin.departmentId || 'Department'})`,
+          comment
+        ).catch(err => console.error("Email error:", err));
+      }
+
       return res.json({
         message: "Approval recorded. Waiting for other department approvals.",
         approval,
       });
+    }
+
+    // Default intermediate approval email
+    if (request?.student?.user?.uniEmail) {
+      await emailService.sendApprovalEmail(
+        request.student.user.uniEmail,
+        request.student.user.firstName || request.student.user.username || "Student",
+        request.title || "Hall Booking Request",
+        `Approved by Level ${admin.adminLevel} Admin`,
+        comment
+      ).catch(err => console.error("Email error:", err));
     }
 
     return res.json({
