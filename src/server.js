@@ -58,7 +58,7 @@ app.use("/resources", authMiddleware, resourceRoutes);
 app.use("/venues", authMiddleware, venueRoutes);
 app.use("/departments", authMiddleware, departmentRoutes)
 app.use("/buildings", authMiddleware, buildingRoutes)
-app.use("/super-admins", authMiddleware, superAdminMiddleware, superAdminRoutes);
+app.use("/super-admins", authMiddleware, superAdminRoutes);
 
 //Seeding data before starting the roles
 async function startServer() {
@@ -68,3 +68,4 @@ async function startServer() {
 }
 
 startServer();
+
