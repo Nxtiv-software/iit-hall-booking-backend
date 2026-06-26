@@ -8,8 +8,8 @@ async function createSuperAdmin() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: "superadmin@iit.edu",
-        password: "Password@123",
+        email: "nxtivsoftware@gmail.com",
+        password: "passwordNxtiv@123",
         username: "superadmin_main",
         firstName: "Super",
         lastName: "Admin",
