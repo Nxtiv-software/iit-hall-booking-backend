@@ -3,3 +3,4 @@ node_modules
 .env
 
 /src/generated/prisma
+src/Firebase/iit-hallbooking-978bf-firebase-adminsdk-fbsvc-eca740d98e.json

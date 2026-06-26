@@ -1,108 +1,147 @@
 import express from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import prisma from "../prismaClient.js";
+import admin from "../Firebase/firebaseAdmin.js";
 
 const router = express.Router();
 
-//Get current user profile
-router.get("/me", async (req, res) => {
+// Login to account
+router.post("/login", async (req, res) => {
+  const { idToken } = req.body;
+
+  if (!idToken)
+    return res.status(400).json({ message: "ID token is required" });
+
   try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const email = decodedToken.email;
+
+    if (!email) return res.status(401).json({ message: "Invalid token" });
+
     const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
+      where: { uniEmail: email },
+      select: {
+        id: true,
+        username: true,
+        role: { select: { id: true, name: true } },
+      },
     });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({ user });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    console.error(error);
+    res.status(401).json({ message: "Unauthorized" });
   }
 });
 
-// Register a new user
-router.post("/register", async (req, res) => {
-  const { username, password, role } = req.body;
+// Register to website
+// router.post("/register", async (req, res) => {
+//   const { idToken, roleId } = req.body;
 
-  // encrypt the password
-  const hashedPassword = bcrypt.hashSync(password, 8);
+//   if (!idToken || !roleId) {
+//     return res
+//       .status(400)
+//       .json({ message: "ID token and roleId are required" });
+//   }
 
-  //save the new user and hashed password to the db
+//   try {
+//     const decodedToken = await admin.auth().verifyIdToken(idToken);
+//     const email = decodedToken.email;
+
+//     if (!email) return res.status(401).json({ message: "Invalid token" });
+
+//     const existingUser = await prisma.user.findUnique({
+//       where: { uniEmail: email },
+//     });
+//     if (existingUser)
+//       return res.status(409).json({ message: "User already exists" });
+
+//     const role = await prisma.role.findUnique({ where: { id: roleId } });
+//     if (!role) return res.status(400).json({ message: "Invalid roleId" });
+
+//     // Generate a unique username
+//     let baseUsername = email.split("@")[0];
+//     let username = baseUsername;
+//     let counter = 1;
+
+//     // Check if username exists and add a counter if needed
+//     while (await prisma.user.findUnique({ where: { username } })) {
+//       username = `${baseUsername}${counter}`;
+//       counter++;
+//     }
+
+//     const user = await prisma.user.create({
+//       data: {
+//         uniEmail: email,
+//         username,
+//         role: { connect: { id: roleId } },
+//       },
+//       select: {
+//         id: true,
+//         username: true,
+//         role: { select: { id: true, name: true } },
+//       },
+//     });
+
+//     res.json({ user, message: "User registered successfully" });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Error creating user" });
+//   }
+// });
+
+// Create superadmin profile
+router.post("/super-admins/register", async (req, res) => {
+  const { email, password, username, firstName, lastName, gender, phoneNum } = req.body;
+
   try {
+    const role = await prisma.role.findUnique({
+      where: { name: "SUPER_ADMIN" },
+    });
+
+    let firebaseUser;
+    try {
+      firebaseUser = await admin.auth().getUserByEmail(email);
+    } catch (error) {
+      try {
+        firebaseUser = await admin.auth().createUser({ email, password });
+      } catch (firebaseError) {
+        if (firebaseError.code === "auth/email-already-exists") {
+          firebaseUser = await admin.auth().getUserByEmail(email);
+        } else {
+          throw firebaseError;
+        }
+      }
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { uniEmail: email } });
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists in database" });
+    }
+
     const user = await prisma.user.create({
       data: {
         username,
-        password: hashedPassword,
-        role: role, // Default to student if not provided
+        firstName,
+        lastName,
+        uniEmail: email,
+        gender,
+        phoneNum,
+        roleId: role.id,
       },
     });
 
-    // create a token
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
-    );
-
-    res.json({
-      token,
-      message: "User registered successfully",
-      user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-      },
+    const superAdmin = await prisma.superAdmin.create({
+      data: { userId: user.id },
     });
-  } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+
+    res.status(201).json({ user, superAdmin });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
   }
 });
 
-router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: {
-        username: username,
-      },
-      select: { id: true, role: true, password: true, username: true },
-    });
-
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
-    }
-
-    const passwordIsValid = bcrypt.compareSync(password, user.password);
-
-    if (!passwordIsValid) {
-      return res.status(401).send({ message: "Invalid Password" });
-    }
-
-    // then we have a successful login
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
-    );
-
-    res.json({
-      token,
-      message: "User login successfully",
-      user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
-  }
-});
 
 export default router;

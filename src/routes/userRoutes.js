@@ -1,40 +1,142 @@
 import express from "express";
 import prisma from "../prismaClient.js";
+import admin from "../Firebase/firebaseAdmin.js";
 
 const router = express.Router();
 
-//Get all the users
-router.get("/users", async (req, res) => {
+//Get current user profile
+router.get("/me", async (req, res) => {
   try {
-    const users = await prisma.user.findMany();
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        uniEmail: true,
+        gender: true,
+        avatarUrl: true,
+        phoneNum: true,
+        role: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
+        admin: {
+          select: {
+            id: true,
+            adminLevel: true,
+            buildingId: true,
+            departmentId: true,
+          },
+        },
 
-    if(!users){
-        return res.status(404).json({message: "Users not found"});
-    }
+        superAdmin: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
 
-    res.json({ users });
+    res.json({ user });
   } catch (error) {
     console.log(error.message);
     res.sendStatus(503);
   }
 });
 
-//Get user by Id
-router.get("/users/:id", async (req, res) => {
+//Get all the users
+router.get("/", async (req, res) => {
   try {
-    const { id } = req.params;
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        uniEmail: true,
+        gender: true,
+        phoneNum: true,
+        avatarUrl: true,
+        role: {
+          select: { name: true },
+        },
+        createdAt: true,
+      },
+    });
+
+    if(!users){
+        return res.status(404).json({message: "Users not found"});
+    }
+
+    return res.json({ users });
+  } catch (error) {
+    return res.status(503).json({ message: error.message });
+  }
+});
+
+//Get user by Id
+router.get("/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
 
     const user = await prisma.user.findUnique({
-        where: { id },
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        uniEmail: true,
+        gender: true,
+        avatarUrl: true,
+        phoneNum: true,
+        role: {
+          select: { name: true },
+        },
+      },
     });
 
     if(!user){
         return res.status(404).json({message: "User not found"});
     }
-    res.json({ user });
+    return res.json({ user });
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(503);
+    return res.status(503).json({ message: error.message });
+  }
+});
+
+// Create superadmin profile
+router.post("/superAdmins", async (req, res) => {
+  const {
+    email,
+    password,
+    username,
+  } = req.body;
+  let firebaseUser;
+
+  try {
+    const role = await prisma.role.findUnique({ where: { name: "SUPER_ADMIN" } });
+
+    firebaseUser = await admin.auth().createUser({ email, password });
+
+    const user = await prisma.user.create({
+      data: { username, uniEmail: email, roleId: role.id },
+    });
+
+    const superadmin = await prisma.superAdmin.create({
+      data: { userId: user.id },
+    });
+
+    res.status(201).json({ user, superadmin });
+  } catch (err) {
+    if (firebaseUser?.uid) await admin.auth().deleteUser(firebaseUser.uid);
+    res.status(500).json({ message: err.message });
   }
 });
 

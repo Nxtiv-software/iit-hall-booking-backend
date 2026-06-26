@@ -6,12 +6,33 @@ const router = express.Router();
 //Get all venues
 router.get("/", async (req, res) => {
   try {
-    const venues = await prisma.venue.findMany();
+    const venues = await prisma.venue.findMany({
+      include: { building: true },
+  });
 
-    res.json(venues);
+    return res.json(venues);
   } catch (error) {
-    console.log(error.message);
-    res.sendStatus(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+//Get a specific venue
+router.get("/:venueId", async (req, res) => {
+  try {
+    const { venueId } = req.params;
+
+    const venue = await prisma.venue.findFirst({
+      where: { id: venueId },
+      include: { building: true },
+    });
+
+    if (!venue) {
+      return res.status(404).json({ message: "Venue not found" });
+    }
+
+    return res.json(venue);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 });
 

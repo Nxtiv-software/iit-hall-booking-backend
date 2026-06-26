@@ -1,45 +1,53 @@
-import jwt from "jsonwebtoken";
+import admin from "../Firebase/firebaseAdmin.js";
 import prisma from "../prismaClient.js";
 
 const authMiddleware = async (req, res, next) => {
-  const authHeader = req.headers["authorization"];
+  const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
+    return res.status(401).json({ message: "No authorization header" });
   }
 
-  // Extract token from "Bearer <token>" format or just "<token>"
   const token = authHeader.startsWith("Bearer ")
     ? authHeader.substring(7)
     : authHeader;
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Verify Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(token);
 
-    //Fetch user with role
+    const email = decodedToken.email;
+    if (!email) {
+      return res.status(401).json({ message: "Invalid Firebase token" });
+    }
+
+    // Fetch user from database
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, username: true, role: true },
+      where: { uniEmail: email },
+      select: {
+        id: true,
+        username: true,
+        role: { select: { name: true } },
+      },
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid token" });
+      return res.status(401).json({ message: "User not registered" });
     }
 
-    req.user = user;
+    // Attach user to request
+    req.user = {
+      id: user.id,
+      email,
+      username: user.username,
+      role: user.role.name,
+    };
+
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token", error: error.message });
+    console.error("Auth error:", error);
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  // jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-  //   if (err) {
-  //     return res.status(401).json({ message: "Invalid token" });
-  //   }
-
-  //   // is the token is correct then we modified the incoming req and set the userId and pass the req to the next endpoint
-  //   req.userId = decoded.id;
-  //   next();
-  // });
 };
 
 export default authMiddleware;

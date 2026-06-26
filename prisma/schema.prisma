@@ -11,7 +11,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 /**
@@ -38,20 +37,20 @@ model User {
   roleId String
   role   Role   @relation(fields: [roleId], references: [id])
 
-  username  String  @unique
-  password  String
-  firstName String?
-  lastName  String?
-  uniEmail  String? @unique
-  gender    String?
-  avatarUrl String?
-  phoneNum  String?
+  username     String?  @unique
+  firstName    String?
+  lastName     String?
+  uniEmail     String?  @unique
+  gender       String?
+  avatarUrl    String?
+  phoneNum     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   admin   Admin?
+  superAdmin SuperAdmin?
   student Student?
 }
 
@@ -78,6 +77,21 @@ model Admin {
 
   bookings  Booking[]
   approvals Approval[]
+  requests Request[]
+}
+
+/**
+ * ============================
+ * SUPER_ADMIN
+ * ============================
+ */
+model SuperAdmin {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /**
@@ -155,17 +169,17 @@ model Building {
  * TIME_SLOT
  * ============================
  */
-model TimeSlot {
-  id        String   @id @default(uuid())
-  name      String
-  startTime DateTime
-  endTime   DateTime
+// model TimeSlot {
+//   id        String   @id @default(uuid())
+//   name      String
+//   startTime DateTime
+//   endTime   DateTime
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  requestSlots RequestTimeSlot[]
-}
+//   requestSlots RequestTimeSlot[]
+// }
 
 /**
  * ============================
@@ -175,7 +189,6 @@ model TimeSlot {
 model Attachment {
   id        String  @id @default(uuid())
   requestId String
-  filePath  String?
   fileName  String?
   realName  String?
   fileSize  String?
@@ -197,11 +210,14 @@ model Request {
   studentId String
   venueId   String
   statusId  String
+  lecturerAdminId String? 
 
   student Student @relation(fields: [studentId], references: [id])
   venue   Venue   @relation(fields: [venueId], references: [id])
   status  Status  @relation(fields: [statusId], references: [id])
+  lecturerAdmin  Admin?  @relation(fields: [lecturerAdminId], references: [id])
 
+  formData     Json?
   title        String?
   description  String?
   attendance   Int?
@@ -212,7 +228,8 @@ model Request {
 
   bookings     Booking[]
   logs         Log[]
-  requestSlots RequestTimeSlot[]
+  // requestSlots RequestTimeSlot[]
+  resources RequestResource[]
   attachments  Attachment[]
   approvals    Approval[]
 }
@@ -271,7 +288,8 @@ model Resource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  venueResources VenueResource[]
+  requests RequestResource[]
+  // venueResources VenueResource[]
 }
 
 /**
@@ -282,12 +300,12 @@ model Resource {
 model Venue {
   id String @id @default(uuid())
 
-  name        String
-  description String?
-  type        String?
-  isAvailable Boolean? @default(true)
-  capacity    Int?
-  floorNumber String?
+  name                String
+  description         String?
+  isAvailable         Boolean? @default(true)
+  capacityAcademic    String?
+  capacityExamination String?
+  floorNumber         String?
 
   buildingId String?
   building   Building? @relation(fields: [buildingId], references: [id])
@@ -295,8 +313,8 @@ model Venue {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  requests       Request[]
-  venueResources VenueResource[]
+  requests Request[]
+  // venueResources VenueResource[]
 }
 
 /**
@@ -327,38 +345,52 @@ model Approval {
 
 /**
  * ============================
+ * REQUEST_RESOURCES (Join Table)
+ * ============================
+ */
+model RequestResource {
+  id         String   @id @default(uuid())
+  requestId  String
+  resourceId String     
+
+  request  Request  @relation(fields: [requestId], references: [id])
+  resource Resource @relation(fields: [resourceId], references: [id])
+}
+
+/**
+ * ============================
  * VENUE_RESOURCES (Join Table)
  * ============================
  */
-model VenueResource {
-  id         String @id @default(uuid())
-  venueId    String
-  resourceId String
+// model VenueResource {
+//   id         String @id @default(uuid())
+//   venueId    String
+//   resourceId String
 
-  venue    Venue    @relation(fields: [venueId], references: [id])
-  resource Resource @relation(fields: [resourceId], references: [id])
+//   venue    Venue    @relation(fields: [venueId], references: [id])
+//   resource Resource @relation(fields: [resourceId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  @@unique([venueId, resourceId])
-}
+//   @@unique([venueId, resourceId])
+// }
 
 /**
  * ============================
  * REQUEST_TIME_SLOT (Join Table)
  * ============================
  */
-model RequestTimeSlot {
-  id         String @id @default(uuid())
-  requestId  String
-  timeSlotId String
+// model RequestTimeSlot {
+//   id         String @id @default(uuid())
+//   requestId  String
+//   timeSlotId String
 
-  request  Request  @relation(fields: [requestId], references: [id])
-  timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id])
+//   request  Request  @relation(fields: [requestId], references: [id])
+//   timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  @@unique([requestId, timeSlotId])
-}
+//   @@unique([requestId, timeSlotId])
+// }
